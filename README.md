@@ -85,6 +85,8 @@ Tests and collection must pass before any future upload/deployment; failures mus
 
 The fixture was reduced from a user-supplied public 50-item response to relevant metadata, retaining pinned/regular ordering and Korean titles. Tests cover mixed recency, duplicates, tie-breaking, malformed dates/metadata, confirmed empty responses, saturation, source errors, and preservation of prior output. No article content or attachments are retained.
 
-Live collection succeeded on September 8, 2026, using Node 26.8.1 and Node 24.20.0 on macOS with the bundled intermediate. Both runtimes passed all six tests. The live 50-record response produced five validated notices, with the newest regular notice ahead of the pins. A successful local run does not prove access from GitHub's network.
+Live collection succeeded on September 8, 2026, using Node 26.8.1 and Node 24.20.0 on macOS with the bundled intermediate. Both runtimes passed all six tests. The live 50-record response produced five validated notices, with the newest regular notice ahead of the pins.
 
-Site terms beyond supplied robots guidance, GitHub workflow execution, deployed content type/cache behavior, and browser access to the deployed feed remain unverified. macOS curl still returned HTML during diagnosis; the collector uses native Node fetch and required no request-header spoofing.
+[GitHub Actions verification run 34239887756](https://github.com/Hiyabye/sogang-notices/actions/runs/34239887756) also passed on Ubuntu 24.04 with Node 24.20.0: six tests passed, and five notices were collected at `2026-09-08T14:41:41.975Z`. This verifies the actual GitHub-hosted runner path, not just local fixtures. Future source availability is not guaranteed.
+
+Site terms beyond supplied robots guidance, Pages publication, deployed content type/cache behavior, and browser access to the deployed feed remain unverified. macOS curl still returned HTML during diagnosis; the collector uses native Node fetch and required no request-header spoofing.
