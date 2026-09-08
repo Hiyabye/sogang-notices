@@ -66,20 +66,15 @@ Target: https://hiyabye.github.io/sogang-notices/notices.json
 
 The example illustrates the schema, not a live feed snapshot. Output contains at most five unique notices, newest first. URLs are public HTTPS article links. `fetchedAt` is the successful fetch time, updated even if titles have not changed. Rill fetches once per page load and marks data older than 24 hours as potentially delayed.
 
-## GitHub verification and future publication
+## GitHub Pages publication
 
 Repository: https://github.com/Hiyabye/sogang-notices
 
-**Verify Sogang notices** is a manual-only workflow on GitHub's Ubuntu runner using Node 24. It installs, tests, collects once from the public source, and prints the validated five-notice feed in the run log. Its only permission is read access to repository contents. It does not deploy, upload an artifact, or run on a schedule.
+**Publish Sogang notices** runs on GitHub's Ubuntu runner using Node 24. It installs, tests, collects once from the public source, and uses GitHub's official Pages actions to upload and deploy only `public/`. Collection or validation failure stops the job before deployment, leaving the previous feed available. Pages uses **Settings > Pages > Build and deployment > Source > GitHub Actions**.
 
-Pages publication and scheduled runs are not enabled. Before enabling them, with separate authorization:
+The first deployment is manual. After verifying the feed's content type, cache behavior, and Firefox access, the intended schedule is 00:17, 06:17, 12:17, and 18:17 UTC (`17 */6 * * *`). Schedules are best-effort and may be delayed or disabled by GitHub. No tokens belong in the public JSON or Rill.
 
-1. Review applicable site terms. The user-supplied robots file allows all user agents, but robots guidance is not a content license.
-2. Set **Settings > Pages > Build and deployment > Source > GitHub Actions** and add the official Pages configuration, upload, and deployment steps after successful tests and collection.
-3. Verify a manual deployment, the JSON content type and cache headers, and fetching from `https://hiyabye.github.io/Rill/` in Firefox. Test other origins separately if needed; do not assume CORS.
-4. Only then enable the intended schedule: 00:17, 06:17, 12:17, and 18:17 UTC (`17 */6 * * *`). Schedules are best-effort and may be delayed or disabled by GitHub.
-
-Tests and collection must pass before any future upload/deployment; failures must preserve the previous successful Pages publication. No tokens belong in the public JSON or Rill.
+Source guidance was checked live on September 8, 2026: `robots.txt` allows crawling. The board footer carries a general copyright statement but links no notice-specific usage terms; an explicit reuse license was not established. Publication is limited to five public titles, dates, and source links, without article bodies or attachments. Robots guidance is not a content license.
 
 ## Verification limits
 
