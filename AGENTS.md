@@ -1,0 +1,11 @@
+# Collector development
+
+- Keep this project separate from Rill and dependency-free. Use npm, native Node fetch/JSON APIs, and the built-in test runner. Supported Node: 22.18+ on 22.x, or 24+.
+- `collect.mjs` owns source fetching, validation/selection, and safe output replacement. `test/collect.test.mjs` exercises the real collector using temporary output directories and local responses. The fixture retains only relevant public metadata.
+- `certificates/sectigo-ov-r36.pem` is the verified public intermediate omitted by Sogang's server. `npm run collect` supplies it through command-scoped `NODE_EXTRA_CA_CERTS`; never disable TLS verification or change system trust. `test/certificate.test.mjs` checks the certificate against Node's existing trusted roots. Review README.md provenance before updating it.
+- Read README.md for source assumptions, the schema, schedule, and deployment limits. Preserve the five-newest contract across pinned and regular entries. Do not silently publish an empty feed on errors or guess changed pagination semantics.
+- Keep two-space indentation, single-quoted JavaScript strings, and semicolon-free style. Do not add browser automation, a server, or an HTML parser without evidence and user approval.
+- Run `npm test` after changes. `npm run collect` performs one public live request and writes generated output under ignored `public/`; it is not part of offline tests. Live collection and all six tests passed on Node 26.8.1 and Node 24.20.0 on macOS after supplying the missing intermediate. GitHub-hosted runner access remains unverified.
+- `.github/workflows/verify.yml` is manual-only: Node 24 on Ubuntu, tests, one live collection, and public feed output in the run log. It has only `contents: read` permission. No scheduled job or Pages deployment is enabled. Ask before enabling either, or making further commits/pushes outside the user's authorization. Future publication must preserve the previous public feed on failure.
+- Commit messages follow `label: concise title`, with a short body explaining the change. Do not add agent attribution.
+- Never manually edit the npm lockfile or generated output. Use npm for dependency metadata. No source cookies, credentials, full articles, or private data belong in this project.

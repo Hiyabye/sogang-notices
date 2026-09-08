@@ -1,0 +1,384 @@
+{
+  "statusCode": 200,
+  "responseMessage": "GET LIST SUCCESS",
+  "data": {
+    "total": 1586,
+    "list": [
+      {
+        "pkId": 551111,
+        "configId": 2,
+        "title": "[졸업] Notice of Early Graduation in 2026 Fall Semester",
+        "regDate": "20260903105754",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 551110,
+        "configId": 2,
+        "title": "[졸업] 2026학년도 2학기 조기졸업 신청 안내",
+        "regDate": "20260903105237",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 551012,
+        "configId": 2,
+        "title": "[기타] 2026학년도 2학기 학생증 신규 발급 및 재발급 안내",
+        "regDate": "20260831103605",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550997,
+        "configId": 2,
+        "title": "[졸업] 서강역량 관련 안내(2026학번 내국인 신입생부터 필수)",
+        "regDate": "20260827164247",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550996,
+        "configId": 2,
+        "title": "[졸업] Language Certificate Submission Notice for the Int'l Students",
+        "regDate": "20260827164114",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550995,
+        "configId": 2,
+        "title": "[졸업] 국제학생 졸업을 위한 언어능력 시행세칙 안내_2026-2학기",
+        "regDate": "20260827163933",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550994,
+        "configId": 2,
+        "title": "[졸업] A guide of processing 'Expected Graduation' in Feb 2027",
+        "regDate": "20260827162431",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550993,
+        "configId": 2,
+        "title": "[졸업] 2027년 2월 졸업예정처리 안내",
+        "regDate": "20260827162140",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550982,
+        "configId": 2,
+        "title": "[졸업] 2026-2학기 취업확인서 제출 안내(9.1 ~ 12.11)",
+        "regDate": "20260825151629",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550952,
+        "configId": 2,
+        "title": "[성적, 학점인정] 2026학년도 2학기 군이러닝 학점인정 신청 안내(9/1~9/30)",
+        "regDate": "20260821130428",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550884,
+        "configId": 2,
+        "title": "[기타] 2026-2학기 신편입 국제학생 오리엔테이션 안내",
+        "regDate": "20260818150410",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550790,
+        "configId": 2,
+        "title": "[수업,수강신청] 2026-2학기 가톨릭공유대학(CU12) 학점교류 안내",
+        "regDate": "20260812172015",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550671,
+        "configId": 2,
+        "title": "[휴,복학] 2026학년도 2학기 휴학 안내(인터넷 신청 기간 이후/ 08.08~)",
+        "regDate": "20260806110904",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550666,
+        "configId": 2,
+        "title": "[수업,수강신청] [학부] 2026-2학기 HUSS 사회구조사업단(HUSS-1) 정규 교육과정 수강신청 안내",
+        "regDate": "20260805144300",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550540,
+        "configId": 2,
+        "title": "[수업,수강신청] 2026학년도 2학기 학부 휴강공고",
+        "regDate": "20260721162215",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550533,
+        "configId": 2,
+        "title": "[수업,수강신청] 2026 Fall Semester Course Registration",
+        "regDate": "20260720165725",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 550532,
+        "configId": 2,
+        "title": "[수업,수강신청] 2026학년도 2학기 학부 수강신청 안내",
+        "regDate": "20260720165427",
+        "isTop": "Y"
+      },
+      {
+        "pkId": 551152,
+        "configId": 2,
+        "title": "[수업,수강신청] 2026학년도 2학기 학부 개설과목 폐강 안내",
+        "regDate": "20260904171719",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550881,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 대구가톨릭대학교 교류 수학 안내",
+        "regDate": "20260818135935",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550879,
+        "configId": 2,
+        "title": "[졸업] 졸업증명서, 학사학위취득유예증명서 발급 일정(8/18 하계졸업일 오전 11시 30분부터)",
+        "regDate": "20260818113408",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550853,
+        "configId": 2,
+        "title": "[수업,수강신청] 2026학년도 2학기 수강신청 담아놓기 경쟁률 및 수강허가 제도 공지",
+        "regDate": "20260814163850",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550850,
+        "configId": 2,
+        "title": "[기타] 2026학년도 2학기 학부 신·편입생 학번 안내",
+        "regDate": "20260814145314",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550760,
+        "configId": 2,
+        "title": "[졸업] [Graduation] Notice of free parking for the graduation day(8.18~8.19)",
+        "regDate": "20260811144045",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550759,
+        "configId": 2,
+        "title": "[졸업] 2026년 8월 하계졸업일 학위증 수령 무료주차 안내(8.18~8.19)",
+        "regDate": "20260811143936",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550758,
+        "configId": 2,
+        "title": "[수업,수강신청] [학부] 2026-2학기 HUSS 포용사회사업단(HUSS-2) 정규 교육과정 수강신청 안내",
+        "regDate": "20260811131102",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550683,
+        "configId": 2,
+        "title": "[수업,수강신청] 2학기 개설 교과목 및 과목 변경사항 안내 - Class Schedules for the 2026 Fall semester and notice for the changes",
+        "regDate": "20260807140803",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550673,
+        "configId": 2,
+        "title": "[휴,복학] ★2026학년도 2학기 복학 안내 (인터넷 신청기간 이후~9/7(월)까지만 가능)",
+        "regDate": "20260806131736",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550656,
+        "configId": 2,
+        "title": "[기타] Notice on undergraduate tuition payment  for the second semester of 2026",
+        "regDate": "20260804141117",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550646,
+        "configId": 2,
+        "title": "[기타] 2026학년도 2학기 학부 등록금 납부 안내",
+        "regDate": "20260803164847",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550635,
+        "configId": 2,
+        "title": "[졸업] [ENG] Graduation in Aug 2026_Notice about diploma and graduation gown",
+        "regDate": "20260803113022",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550634,
+        "configId": 2,
+        "title": "[졸업] 2025학년도 후기(2026년 8월) 졸업_학위증 배부 및 학위가운 대여 안내",
+        "regDate": "20260803111600",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550602,
+        "configId": 2,
+        "title": "[성적, 학점인정] [학부] 2026학년도 하계학기 성적 포함 성적증명서 발급 안내",
+        "regDate": "20260726122208",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550600,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 홍익대학교 교류 수학 안내",
+        "regDate": "20260724160738",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550594,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 한동대학교 교류 수학 안내",
+        "regDate": "20260724125339",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550586,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 연세대학교 교류 수학 안내",
+        "regDate": "20260723195007",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550537,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 이화여자대학교 교류 수학 안내",
+        "regDate": "20260721143952",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550525,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 한국외국어대학교 교류 수학 안내",
+        "regDate": "20260720112544",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550517,
+        "configId": 2,
+        "title": "[기타] 학칙 개정 공고 ",
+        "regDate": "20260716161524",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550503,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 가톨릭대학교 교류 수학 안내",
+        "regDate": "20260714132854",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550498,
+        "configId": 2,
+        "title": "[성적, 학점인정] [학부] 2026학년도 1학기 성적 포함 성적증명서 발급 안내",
+        "regDate": "20260714115020",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550495,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 부산대학교 교류 수학 안내",
+        "regDate": "20260713150624",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550494,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 고려대학교 교류 수학 안내",
+        "regDate": "20260713145239",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550476,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 성균관대학교 교류 수학 안내",
+        "regDate": "20260708134903",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550467,
+        "configId": 2,
+        "title": "[국내교류] (마감) 2026학년도 2학기 서울대학교 교류 수학 안내",
+        "regDate": "20260706161948",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550435,
+        "configId": 2,
+        "title": "[휴,복학] (인터넷 휴학 신청기간 7/23~8/7) 2026학년도 2학기 휴학 안내",
+        "regDate": "20260630134756",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550432,
+        "configId": 2,
+        "title": "[휴,복학] (인터넷 복학 신청기간 7/23~8/7) 2026학년도 2학기 복학 안내",
+        "regDate": "20260630132941",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550412,
+        "configId": 2,
+        "title": "[기타] ★ 2026학년도 하계 학부·대학원 연계과정 학생 선발 안내(~26/07/16)",
+        "regDate": "20260623152530",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550401,
+        "configId": 2,
+        "title": "[수업,수강신청] 2026학년도 2학기 개설교과목 업로드 (6/29) 안내 - The class schedules for the 2026 Fall Semester have been uploaded",
+        "regDate": "20260620104017",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550386,
+        "configId": 2,
+        "title": "[졸업] (국제학생 Int'l Student) 2026년 8월 졸업/추가학기 프로세스 안내(Notice for Graduation in Aug, 2026 and Extra Semester Process)",
+        "regDate": "20260619152810",
+        "isTop": "N"
+      },
+      {
+        "pkId": 550383,
+        "configId": 2,
+        "title": "[졸업] 2026년 8월 졸업(학위취득유예자) 및 졸업연기(재학생) 신청 안내문",
+        "regDate": "20260619140552",
+        "isTop": "N"
+      }
+    ],
+    "pageNum": 1,
+    "pageSize": 50,
+    "size": 50,
+    "startRow": 1,
+    "endRow": 50,
+    "pages": 32,
+    "prePage": 0,
+    "nextPage": 2,
+    "isFirstPage": true,
+    "isLastPage": false,
+    "hasPreviousPage": false,
+    "hasNextPage": true,
+    "navigatePages": 8,
+    "navigatepageNums": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "navigateFirstPage": 1,
+    "navigateLastPage": 8
+  }
+}
