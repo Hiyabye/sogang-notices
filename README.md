@@ -48,7 +48,7 @@ One first-page request is intentionally bounded. If fewer than five distinct reg
 
 ## Feed contract
 
-Target: https://hiyabye.github.io/sogang-notices/notices.json
+Live feed: https://hiyabye.github.io/sogang-notices/notices.json
 
 ```json
 {
@@ -72,7 +72,9 @@ Repository: https://github.com/Hiyabye/sogang-notices
 
 **Publish Sogang notices** runs on GitHub's Ubuntu runner using Node 24. It installs, tests, collects once from the public source, and uses GitHub's official Pages actions to upload and deploy only `public/`. Collection or validation failure stops the job before deployment, leaving the previous feed available. Pages uses **Settings > Pages > Build and deployment > Source > GitHub Actions**.
 
-The first deployment is manual. After verifying the feed's content type, cache behavior, and Firefox access, the intended schedule is 00:17, 06:17, 12:17, and 18:17 UTC (`17 */6 * * *`). Schedules are best-effort and may be delayed or disabled by GitHub. No tokens belong in the public JSON or Rill.
+Publication runs at 00:17, 06:17, 12:17, and 18:17 UTC (`17 */6 * * *`), or 03:17, 09:17, 15:17, and 21:17 Korea Standard Time. Manual runs are also available. Schedules are best-effort and may be delayed or disabled by GitHub; the first scheduled trigger has not yet been observed. No tokens belong in the public JSON or Rill.
+
+The live feed responds with `Content-Type: application/json; charset=utf-8`, `Access-Control-Allow-Origin: *`, and `Cache-Control: max-age=600`. GitHub's CDN may serve a cached response for up to ten minutes. Rill requests revalidation on page load; it does not continuously refresh while open.
 
 Source guidance was checked live on September 8, 2026: `robots.txt` allows crawling. The board footer carries a general copyright statement but links no notice-specific usage terms; an explicit reuse license was not established. Publication is limited to five public titles, dates, and source links, without article bodies or attachments. Robots guidance is not a content license.
 
@@ -84,4 +86,6 @@ Live collection succeeded on September 8, 2026, using Node 26.8.1 and Node 24.20
 
 [GitHub Actions verification run 34239887756](https://github.com/Hiyabye/sogang-notices/actions/runs/34239887756) also passed on Ubuntu 24.04 with Node 24.20.0: six tests passed, and five notices were collected at `2026-09-08T14:41:41.975Z`. This verifies the actual GitHub-hosted runner path, not just local fixtures. Future source availability is not guaranteed.
 
-Site terms beyond supplied robots guidance, Pages publication, deployed content type/cache behavior, and browser access to the deployed feed remain unverified. macOS curl still returned HTML during diagnosis; the collector uses native Node fetch and required no request-header spoofing.
+[First Pages deployment 34240766413](https://github.com/Hiyabye/sogang-notices/actions/runs/34240766413) passed, publishing five notices fetched at `2026-09-08T14:49:45.413Z`. Firefox 155.0 verified live rendering from a local Vite development origin and fetching from the actual `https://hiyabye.github.io/Rill/` origin. Light/dark screenshots and preserved search autofocus were checked. Deployed content type, CORS, and cache headers were inspected.
+
+A notice-specific reuse license was not established; see the source-guidance note above. Future source availability and exact scheduled execution times are not guaranteed. macOS curl returned HTML from Sogang during diagnosis; the collector uses native Node fetch and required no request-header spoofing.
