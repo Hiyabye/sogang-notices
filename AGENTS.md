@@ -24,13 +24,13 @@
 
 - Board: `https://www.sogang.ac.kr/ko/academic-support/notices`. API: `/api/api/v1/mainKo/BbsData/boardList` on the same origin, with `pageNum=1`, `pageSize=50`, and `bbsConfigFk=2`; retain the complete request in `sourceUrl`.
 - Validate status, complete first-page size, total, pagination flags, IDs, board identity, nonempty titles, dates, and `isTop` values. A confirmed zero-total empty board is valid; missing/truncated data or an HTML error page is not.
-- The source places pins before regular notices. Validate descending registration dates within each group, deduplicate by `pkId`, sort both groups by `regDate` descending with descending ID as tie-breaker, and select five. Never just take the first five source rows.
-- One 50-record request is intentionally bounded. If fewer than five distinct regular records remain while more pages exist, fail and investigate pagination rather than quietly returning a pin-dominated feed. Do not weaken this guard to make a job pass.
+- The source places pins before regular notices. Validate descending registration dates within each group, deduplicate by `pkId`, sort both groups by `regDate` descending with descending ID as tie-breaker, and select 30. Never just take the first 30 source rows.
+- One 50-record request is intentionally bounded. If fewer than 30 distinct regular records remain while more pages exist, fail and investigate pagination rather than quietly returning a pin-dominated feed. Do not weaken this guard to make a job pass.
 - `regDate` is a 14-digit calendar date/time without an established timezone. Use it for ordering and expose its `YYYY-MM-DD` date, not an invented UTC publication timestamp. Invalid or missing dates fail the complete fetch.
 - Article URLs use the verified public detail path and query. Source `secret: "Y"` did not mean these notices required login when checked; do not infer access semantics or bypass controls based on that flag.
-- Output: `{ schemaVersion: 1, fetchedAt: string, notices: { title: string, url: string, publishedDate: string }[] }`. At most five unique entries, newest first, safe public HTTPS links. `fetchedAt` is the successful fetch time in UTC, even when content is unchanged.
+- Output: `{ schemaVersion: 1, fetchedAt: string, notices: { title: string, url: string, publishedDate: string }[] }`. At most 30 unique entries, newest first, safe public HTTPS links. `fetchedAt` is the successful fetch time in UTC, even when content is unchanged.
 - The request times out after 20 seconds and rejects redirects/non-JSON responses. Validate everything before writing a temporary file and renaming it over `public/notices.json`. Never replace previous output after a failed fetch or validation.
-- Schema, count, date, or URL changes affect Rill's `src/notices.ts` and its tests. Coordinate both repositories before publishing incompatible output; do not assume they deploy together.
+- Schema, count, date, or URL changes affect Rill's `src/notices.ts` and its tests. Coordinate both repositories before publishing incompatible output; do not assume they deploy together. Deploy Rill's expanded-feed-compatible client before publishing 30 entries, because the old client rejects more than five. Already-open old Rill tabs need a reload.
 
 ## Development and verification
 

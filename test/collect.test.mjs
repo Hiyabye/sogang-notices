@@ -12,13 +12,30 @@ test('mixes pinned and regular notices by registration date, not board position'
   const feed = buildFeed(fixture, fetchedAt)
   assert.equal(feed.schemaVersion, 1)
   assert.equal(feed.fetchedAt, '2026-09-08T12:00:00.000Z')
-  assert.deepEqual(feed.notices.map(row => new URL(row.url).pathname), [
+  assert.equal(feed.notices.length, 30)
+  assert.deepEqual(feed.notices.slice(0, 5).map(row => new URL(row.url).pathname), [
     '/ko/detail/551152', '/ko/detail/551111', '/ko/detail/551110', '/ko/detail/551012', '/ko/detail/550997',
   ])
   assert.equal(feed.notices[0].publishedDate, '2026-09-04')
   assert.equal(feed.notices[0].title, '[수업,수강신청] 2026학년도 2학기 학부 개설과목 폐강 안내')
   assert.equal(new URL(feed.notices[0].url).searchParams.get('redirect'), '/ko/academic-support/notices')
   assert.equal(new URL(feed.notices[0].url).searchParams.get('bbsConfigFk'), '2')
+})
+
+test('selects the newest 30 unique entries and rejects insufficient regular coverage', () => {
+  const expected = [...new Map(fixture.data.list.map(row => [row.pkId, row])).values()]
+    .sort((a, b) => b.regDate.localeCompare(a.regDate) || b.pkId - a.pkId)
+    .slice(0, 30).map(row => `/ko/detail/${row.pkId}`)
+  assert.deepEqual(buildFeed(fixture).notices.map(row => new URL(row.url).pathname), expected)
+  const copy = structuredClone(fixture)
+  const regular = copy.data.list.filter(row => row.isTop === 'N')
+  for (const row of regular.slice(29)) row.isTop = 'Y'
+  copy.data.list.sort((a, b) => b.regDate.localeCompare(a.regDate))
+  assert.throws(() => buildFeed(copy), /Too few regular notices/)
+  Object.assign(copy.data, { total: copy.data.size, hasNextPage: false })
+  assert.equal(buildFeed(copy).notices.length, 30)
+  Object.assign(copy.data, { list: regular.slice(0, 7), size: 7, total: 7 })
+  assert.equal(buildFeed(copy).notices.length, 7)
 })
 
 test('deduplicates pinned copies and uses the ID to break date ties', () => {

@@ -2,7 +2,7 @@ import { mkdir, writeFile, rename } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 
 export const sourceUrl = 'https://www.sogang.ac.kr/api/api/v1/mainKo/BbsData/boardList?pageNum=1&pageSize=50&bbsConfigFk=2&category=&introPkId=&title=&content=&username='
-const noticeCount = 5
+const noticeCount = 30
 
 function validRegistrationDate(value) {
   if (typeof value !== 'string' || !/^\d{14}$/.test(value)) return false
@@ -40,7 +40,7 @@ export function buildFeed(value, fetchedAt = new Date()) {
     }
     unique.set(row.pkId, row)
   }
-  // ponytail: one 50-row page; fetch further pages if pins crowd out five regular notices.
+  // ponytail: one 50-row page; fetch further pages if pins crowd out 30 regular notices.
   if (data.hasNextPage && [...unique.values()].filter(row => row.isTop === 'N').length < noticeCount) {
     throw new Error('Too few regular notices in the first 50 rows; pagination needs review.')
   }

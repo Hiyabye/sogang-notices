@@ -8,7 +8,7 @@ A small, dependency-free collector for public Sogang University undergraduate ac
 
 ## What the feed contains
 
-Five recent notices with their original titles, publication dates, and source links. Pinned and regular notices are combined and ordered by registration date, not pin position. No article bodies, attachments, or login data are collected.
+Up to 30 recent notices with their original titles, publication dates, and source links. Pinned and regular notices are combined and ordered by registration date, not pin position. No article bodies, attachments, or login data are collected.
 
 The collector reads the first 50 source records. If pins crowd out enough regular entries to make selection unreliable, it fails rather than publishing a misleading list. Source errors or invalid data leave the previous published feed available. An explicitly empty board can produce an empty list.
 
@@ -52,11 +52,13 @@ For architecture, source-field assumptions, testing requirements, and changes co
 }
 ```
 
-This example illustrates the format, not the current live data. `notices` contains at most five unique entries, newest first. `publishedDate` is a source calendar date with no invented timezone; `fetchedAt` is a UTC timestamp.
+This example illustrates the format, not the current live data. `notices` contains at most 30 unique entries, newest first. `publishedDate` is a source calendar date with no invented timezone; `fetchedAt` is a UTC timestamp.
 
 Observed response headers are `Content-Type: application/json; charset=utf-8`, `Access-Control-Allow-Origin: *`, and `Cache-Control: max-age=600`. No token is required to read the feed.
 
 ## Publish or inspect an update
+
+Before first publishing the expanded 30-notice feed, deploy the matching Rill update. Older Rill clients reject feeds larger than five notices; already-open tabs need a reload.
 
 Pages uses **Settings > Pages > Build and deployment > Source > GitHub Actions**. The **Publish Sogang notices** workflow tests, collects, and deploys only the validated `public/` output using GitHub's official Pages actions.
 
@@ -92,6 +94,6 @@ The intermediate and source leaf were verified against Node's trusted roots befo
 
 ## Source guidance and limitations
 
-On September 8, 2026, live `robots.txt` allowed crawling. The board footer carried a general copyright statement but no linked notice-specific usage terms; an explicit reuse license was not established. Robots guidance is not a content license. Publication stays limited to five public titles, dates, and source links.
+On September 8, 2026, live `robots.txt` allowed crawling. The board footer carried a general copyright statement but no linked notice-specific usage terms; an explicit reuse license was not established. Robots guidance is not a content license. Publication stays limited to public titles, dates, and source links, now for up to 30 notices. During the expansion check, `robots.txt` returned an HTML unavailable page, so current crawling guidance could not be reconfirmed.
 
 Live collection, GitHub Pages deployment, and Firefox access from local and deployed Rill origins have been verified. This does not guarantee future source availability, unchanged response structure, or exact scheduled execution. Development verification details are in AGENTS.md.
