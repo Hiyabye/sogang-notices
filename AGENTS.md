@@ -2,70 +2,106 @@
 
 ## Scope and conventions
 
-- Keep this collector separate from [Rill](https://github.com/Hiyabye/Rill). It fetches public undergraduate academic notice metadata and publishes static JSON, not a backend for Rill.
-- Use npm, the lockfile, native Node fetch/JSON APIs, and the built-in test runner. No runtime dependencies. Support Node 22.18+ on 22.x, or Node 24+; GitHub Actions uses Node 24.
-- Use two-space indentation, single-quoted JavaScript strings, and semicolon-free style. Ask before adding dependencies, browser automation, other boards, full articles, or persistent services.
-- `README.md` is for users and operators: feed behavior, local commands, publication, certificate provenance, and troubleshooting. This file owns development responsibilities, invariants, and verification.
-- Preserve unrelated changes. Never manually edit the npm lockfile or generated `public/` output. Do not commit output, cookies, private keys, credentials, or private source data.
-- Get explicit authorization for commits, pushes, deployment, or changes to live scheduling. Commit format: `label: concise title`, followed by a short explanatory body. No agent attribution.
+- Keep this collector separate from [Rill](https://github.com/Hiyabye/Rill). It publishes public notice-list metadata for the 13 boards in `sources.mjs`, not a runtime backend.
+- Use npm, the lockfile, native Node fetch, and the built-in test runner. parse5 is the approved HTML parser; do not execute source JavaScript or add browser automation. Rill itself remains free of runtime dependencies.
+- Support Node 22.18+ on 22.x, or Node 24+; GitHub Actions uses Node 24. Use two-space indentation, single-quoted JavaScript strings, and semicolon-free style.
+- Ask before dependencies, other boards, articles, attachments, login-only material, or persistent services. No RSS, arbitrary URL registry, plugin framework, database, or custom recovery service.
+- `README.md` is for users/operators: feed behavior, commands, publication, certificate provenance, and troubleshooting. This file owns engineering invariants and verification.
+- Preserve unrelated changes. Never manually edit the lockfile or generated `public/`. Do not commit output, cookies, private keys, credentials, or private source data.
+- Commits, pushes, deployment, and live scheduling changes require explicit authorization. Commit format is `label: concise title`, followed by a short body. No agent attribution.
 
 ## Responsibilities and data flow
 
-`Sogang public JSON -> collect.mjs -> validated public/notices.json -> GitHub Pages -> Rill browser fetch`
+`Main-site public JSON / department CMS HTML -> validated source selection -> per-board feeds -> staged public/feeds -> GitHub Pages -> Rill`
 
-- `collect.mjs`: `sourceUrl` selects the board; `buildFeed` validates and selects records without I/O; `collect` performs one bounded request and replaces output only after validation.
+- `sources.mjs`: explicit source IDs, CMS site/board/host tuples, board pagination URLs, and fixed published recovery URLs. No user configuration.
+- `collect.mjs`: main-site `buildFeed`, bounded request I/O, `collectSource`, two-source concurrency, recovery, final validation, staging, and workflow summary. Expected source failures use `SourceError`; programming and infrastructure faults propagate and stop publication.
+- `cms.mjs`: parse5-based pure CMS list parsing and selection. Never execute scripts or fetch article content.
+- `feed.mjs`: strict schema-2 recovery/final-output validation and the explicit source-failure error type. Do not catch final validation as recoverable source failure.
 - `certificates/sectigo-ov-r36.pem`: verified public intermediate omitted by Sogang's TLS server. `package.json` supplies it only to `npm run collect` via `NODE_EXTRA_CA_CERTS`.
-- `test/collect.test.mjs`: source validation, selection, failure handling, and output preservation using local responses and temporary directories.
-- `test/fixtures/board-list.json`: reduced public metadata from a real response, preserving Korean text and pinned/regular ordering. Keep fixtures free of articles, attachments, credentials, and personal data.
-- `test/certificate.test.mjs`: intermediate fingerprint, CA status, validity period, and signature against a root already trusted by Node.
-- `.github/workflows/publish.yml`: tests, collection, then official Pages upload/deployment actions. Only ignored `public/` is published.
+- `test/collect.test.mjs`: main-site validation, sampling, recovery/bootstrap, all-board output, and persistence failure checks with local responses/temp directories.
+- `test/cms.test.mjs`, `test/fixtures/cms-list.html`, `test/fixtures/cms-empty.html`: full comment titles, pins, sparse lists, identity, ordering, malformed input, and incomplete sampling. Fixtures retain public list metadata and remove authors; no article bodies/attachments.
+- `test/fixtures/board-list.json`: reduced main-site metadata with Korean titles and pinned/regular ordering.
+- `test/certificate.test.mjs`: intermediate fingerprint, CA status, validity, and signature against a Node-trusted root.
+- `.github/workflows/publish.yml`: tests, collection/staging, then official Pages upload/deployment. Only ignored `public/` is published.
 
 ## Source and output contracts
 
-- Board: `https://www.sogang.ac.kr/ko/academic-support/notices`. API: `/api/api/v1/mainKo/BbsData/boardList` on the same origin, with `pageNum=1`, `pageSize=50`, and `bbsConfigFk=2`; retain the complete request in `sourceUrl`.
-- Validate status, complete first-page size, total, pagination flags, IDs, board identity, nonempty titles, dates, and `isTop` values. A confirmed zero-total empty board is valid; missing/truncated data or an HTML error page is not.
-- The source places pins before regular notices. Validate descending registration dates within each group, deduplicate by `pkId`, sort both groups by `regDate` descending with descending ID as tie-breaker, and select 30. Never just take the first 30 source rows.
-- One 50-record request is intentionally bounded. If fewer than 30 distinct regular records remain while more pages exist, fail and investigate pagination rather than quietly returning a pin-dominated feed. Do not weaken this guard to make a job pass.
-- `regDate` is a 14-digit calendar date/time without an established timezone. Use it for ordering and expose its `YYYY-MM-DD` date, not an invented UTC publication timestamp. Invalid or missing dates fail the complete fetch.
-- Article URLs use the verified public detail path and query. Source `secret: "Y"` did not mean these notices required login when checked; do not infer access semantics or bypass controls based on that flag.
-- Output: `{ schemaVersion: 1, fetchedAt: string, notices: { title: string, url: string, publishedDate: string }[] }`. At most 30 unique entries, newest first, safe public HTTPS links. `fetchedAt` is the successful fetch time in UTC, even when content is unchanged.
-- The request times out after 20 seconds and rejects redirects/non-JSON responses. Validate everything before writing a temporary file and renaming it over `public/notices.json`. Never replace previous output after a failed fetch or validation.
-- Schema, count, date, or URL changes affect Rill's `src/notices.ts` and its tests. Coordinate both repositories before publishing incompatible output; do not assume they deploy together. Deploy Rill's expanded-feed-compatible client before publishing 30 entries, because the old client rejects more than five. Already-open old Rill tabs need a reload.
+### Catalog and access
+
+The 13 IDs must agree with Rill's `src/notice-sources.ts`. Group order: University-wide, Computer Science, AI, AI-Based Liberal Studies.
+
+| Source ID | Site | Board | Host prefix |
+| --- | --- | --- | --- |
+| sogang-academic | main API | 2 | www |
+| cs-main | cs | 1905 | cs |
+| cs-undergraduate | cs | 1745 | cs |
+| cs-graduate | cs | 1747 | cs |
+| cs-general | cs | 1746 | cs |
+| cs-careers | cs | 1748 | cs |
+| cs-news | cs | 1749 | cs |
+| ai-academic | ai | 5110 | ai |
+| ai-news | ai | 5130 | ai |
+| ai-general | ai | 6330 | ai |
+| ai-careers | ai | 5131 | ai |
+| aibased-notices | aibased | 7510 | scc |
+| aibased-news | aibased | 7530 | scc |
+
+- CMS list: `https://<host>.sogang.ac.kr/front/cmsboardlist.do?bbsConfigFK=<board>&siteId=<site>&currentPage=<page>`. Menu scripts and forms confirm these mappings. Board 7510 is labeled 공지사항 in Rill by owner decision, despite its page title 게시판.
+- All 12 department boards returned server-rendered HTML during investigation. Inspected board/common scripts exposed no structured list API. Full regular titles are in anchor comments where visible text can be truncated. Pinned titles on AI news/careers are direct anchor text without comments; other pinned templates use comments. Treat these as observed explicit templates, not a generic fallback scraper.
+- Parse HTML with parse5. Decode comment entities as RCDATA without interpreting title markup. Exclude the pin badge, authors, views, attachments, and scripts. Validate board/site hidden inputs, current page, page count, title link identity, dates, regular ordinal continuity, expected page size, and cross-page total consistency. A malformed/error page is never a successful empty source.
+- CMS returns ten regular rows plus pins. Read up to three pages, or all pages if fewer. Require 30 distinct regular records while additional pages exist, validate within-group/cross-page date ordering, and fail rather than weakening sampling. Mix pins and regular rows by date descending, then descending ID; retain 30 unique entries. A confirmed empty first page uses the observed `li.nothing` message (`검색된 게시물이 없습니다.`) without paging controls. Require the expected board/site and reject unexpected nonempty search filters; absent/malformed list structure is an error.
+- Canonical CMS links retain verified origin, `/front/cmsboardview.do`, `bbsConfigFK`, `siteId`, and `pkid`. Drop only list-navigation/search fields. Do not infer global `pkid` uniqueness, collapse different board records, or normalize host aliases without new evidence. Rill merges exact URLs only; similarly titled cross-posts with different IDs remain separate.
+
+### Main university API
+
+- Board: `https://www.sogang.ac.kr/ko/academic-support/notices`. API: `/api/api/v1/mainKo/BbsData/boardList` on that origin, `pageNum=1`, `pageSize=50`, `bbsConfigFk=2`; retain the complete `sourceUrl` query.
+- Validate status, complete first-page size, total, pagination flags, IDs, board identity, nonempty titles, dates, and `isTop`. Confirmed zero-total empty is valid; missing/truncated data or HTML is not.
+- Pins precede regular notices. Validate descending registration dates within each group, deduplicate by `pkId`, sort by `regDate` descending with descending ID ties, then select 30. Require at least 30 distinct regular rows while more pages exist. Do not just take the first 30 source rows.
+- `regDate` is a 14-digit calendar date/time with no established timezone. Use it for selection and expose only its date. Invalid dates fail the source.
+- Article URLs retain the verified public detail path/query. The previously observed `secret: "Y"` did not imply login-only notices; never bypass access controls based on that field.
+
+### Feed and recovery
+
+- Output path: `public/feeds/<source-id>.json`. Envelope: `{ schemaVersion: 2, sourceId, collectionStatus: 'ok' | 'error', lastAttemptAt, fetchedAt, notices: { title, url, publishedDate }[] }`.
+- `fetchedAt` is last successful source fetch, not newest publication date. `lastAttemptAt` records the completed attempt, must not precede success, and changes on recovery. Both are canonical UTC ISO timestamps with milliseconds, at most five minutes ahead. Dates are valid `YYYY-MM-DD`; titles are nonempty and at most 2000 characters; entries are unique safe HTTP(S) links without credentials, newest first, at most 30. Strip unknown fields from recovery output.
+- Each request has a 20-second timeout, a streamed 2 MiB body ceiling, expected JSON/HTML content type, no redirects/cookies/referrer, and cache revalidation. Collect two sources at a time, sequential pages per source. No blind retries or unbounded pagination.
+- On an explicitly classified source failure, request that board's previous envelope from `https://hiyabye.github.io/sogang-notices/feeds/<id>.json`, validate it, preserve notices and successful timestamp, and set error status/new attempt time. Never publish raw exceptions or response bodies; diagnostics belong in logs.
+- Missing, wrong-source, malformed, future-dated, or otherwise invalid required recovery stops the entire publication. Bootstrap therefore requires all 13 sources to succeed; never fabricate empty fallbacks. Healthy boards can publish with recovered failures only when every recovery is valid.
+- Validate all feeds before writing a staged directory. Write failures stop publication. Rename the previous local feeds directory aside, replace it with the complete stage, and restore the old directory on replacement failure. Clean staged paths; do not describe this as crash-proof or CDN-transactional publication. Output/cleanup/workflow-summary failures must produce a failed command, never continue to upload.
+- Emit source-specific recovered failures in `GITHUB_STEP_SUMMARY` even when publication is safe. GitHub Pages caching can return older valid recovery data despite revalidation; do not promise perfect last-version knowledge.
+- Old schema-1 clients/backups are intentionally unsupported by v0.4. Producer and consumer deploy independently; coordinate tests and live verification before separately authorized publication.
 
 ## Development and verification
 
-Run from the collector root:
-
 ```sh
 npm ci
-npm test          # Offline tests; no source requests or deployments
-npm run collect   # One live source request; writes ignored public/notices.json
+npm test          # Offline, no source requests or deployment
+npm run collect   # Live metadata collection into ignored public/feeds/
 ```
 
-1. Read the relevant code, fixtures, callers, and Rill contract before editing.
-2. For a bug, reproduce it through the collector or the closest safe fixture path first. Add a focused regression test without weakening existing checks.
-3. Run `npm test`. After fetching/selection/TLS changes, run one safe live collection and inspect output. If live access is unavailable, report that separately from passing fixture tests.
-4. For contract changes, run Rill's prescribed checks too. Its isolated E2E tests must not depend on live Sogang.
-5. Before an authorized publication, review the diff and ensure only intended source files are staged. A manual workflow run is a real live fetch and deployment, not a dry run.
-6. After publication, inspect JSON content type, CORS/cache headers, `fetchedAt`, and Firefox access from both local Rill and its actual deployed origin. A successful local collection does not prove the GitHub runner or browser path.
+1. Inspect Git state separately in this repo and Rill. Read relevant source/callers/tests before editing.
+2. Reproduce bugs through collection or the closest safe fixture path before editing. Add focused regression tests; never weaken validation to hide a source change.
+3. Run `npm test`. After parser/selection/TLS changes, perform one safe live collection and inspect all output. Investigate failed boards rather than blindly retrying.
+4. For contract changes, run Rill's `npm test` and `npm run build` too. Keep automated tests independent of deployed feeds and live Sogang.
+5. Verify sparse/pin-heavy/empty sources, truncated pages, metadata conflicts, schema/source/date/URL rejection, preserved timestamps, missing/invalid recovery, bootstrap, and output failures. Tests do not prove every possible filesystem crash or remote upload failure.
+6. Before an authorized publication, review the complete diff and staged files. After publication, verify all 13 URLs, JSON headers, CORS, timestamps, source IDs, and Firefox integration from local and deployed Rill. Local output and fixture interception do not prove deployment/CORS.
 
 ## TLS maintenance
 
-The PEM contains a public CA certificate, not a private key or user credential. Its issuer, fingerprint, official download URL, and expiry are documented in README.md.
-
-- Use `npm run collect`, not plain `node collect.mjs`, to apply the command-scoped intermediate. Do not change system trust or disable certificate/hostname verification.
-- If the source changes issuer or the certificate expires, inspect the server chain, obtain the intermediate from its official issuer, and verify its signature against Node's existing trusted roots before replacing it. Update the fingerprint test and README provenance together.
-- Do not add runtime certificate downloading or an insecure fallback. Remove the workaround only after a plain Node fetch verifies the complete server-supplied chain.
+- Use `npm run collect`, not plain `node collect.mjs`, to apply the command-scoped intermediate. Never change system trust or disable certificate/hostname checks. The existing certificate also allowed the inspected CMS requests with normal verification.
+- The PEM is a public CA certificate, not a secret. README records provenance/fingerprint. If issuer changes or expiry approaches, inspect the chain, obtain the intermediate from the official issuer, verify against Node-trusted roots, and update tests/documentation together.
+- No runtime certificate download or insecure fallback. Remove the workaround only after plain Node fetch verifies the server-supplied chain.
 
 ## Publishing and scheduling
 
-- Public repository: `Hiyabye/sogang-notices`; live feed: `https://hiyabye.github.io/sogang-notices/notices.json`.
-- Pages source is **GitHub Actions**. The workflow uses Node 24 on Ubuntu, `contents: read`, `pages: write`, `id-token: write`, the `github-pages` environment, and serialized Pages runs.
-- Schedule: `0 */6 * * *` UTC, plus `workflow_dispatch`. This means 00:00/06:00/12:00/18:00 UTC or 03:00/09:00/15:00/21:00 KST. The live schedule uses the workflow on the default branch. Pushing code does not itself trigger publication.
-- GitHub schedules are best-effort, especially at the start of an hour. Check Actions history for delayed, failed, or disabled runs; do not promise exact freshness or add blind retries.
-- Tests and collection must pass before upload/deployment. Failures must leave the last published feed available. Rill flags it stale after 24 hours; the CDN's observed cache lifetime is ten minutes.
-- Keep source requests modest and metadata-only. Robots guidance allowed crawling when checked; no notice-specific reuse license was established from the board's general copyright statement. Recheck guidance when expanding scope.
+- Public repository: `Hiyabye/sogang-notices`. Pages source is GitHub Actions, Node 24 on Ubuntu, `contents: read`, `pages: write`, `id-token: write`, `github-pages` environment, serialized runs.
+- Preserve `0 */6 * * *` UTC plus manual dispatch. Scheduled starts are 00:00/06:00/12:00/18:00 UTC (03:00/09:00/15:00/21:00 KST), not guaranteed completion times. Pushing does not itself trigger publication, but the next scheduled run uses default-branch code.
+- Tests, collection, recovery, and staging must all pass before upload/deployment. Any failure stops upload, retaining the previous published directory. Rill warns after 24 hours of source staleness; observed historical CDN lifetime is ten minutes.
+- Source reuse licensing remains unestablished. Earlier main-site robots guidance allowed crawling; current CMS responses contain malformed server-template text or unavailable HTML. This is not reliable permission or a license. Limit collection to public list titles, dates, and links; recheck guidance before expansion.
 
 ## Verification baseline
 
-Initial live collection and six tests passed on Node 26.8.1 and 24.20.0 locally, and on Ubuntu 24.04 / Node 24.20.0 in [GitHub Actions](https://github.com/Hiyabye/sogang-notices/actions/runs/34239887756). The [first Pages deployment](https://github.com/Hiyabye/sogang-notices/actions/runs/34240766413) and Firefox 155.0 live integration also passed. These are historical checks, not guarantees of future availability or exact schedule execution.
+Historical schema-1 collection, certificate tests, and deployment were verified on Node 26.8.1 and 24.20.0, including [initial CI](https://github.com/Hiyabye/sogang-notices/actions/runs/34239887756) and [first Pages deployment](https://github.com/Hiyabye/sogang-notices/actions/runs/34240766413). These do not prove the new schema-2 deployment, future source availability, or scheduled execution.
+
+During v0.4 implementation, all 13 boards collected locally with normal TLS verification on Node 26.8.1: twelve feeds contained 30 entries and AI-Based Liberal Studies news contained seven. Canonical URLs for one retained article per board returned HTTP 200 to HEAD requests, without downloading article bodies. Rill validated and rendered all 367 locally collected entries in Firefox 155.0 using intercepted feed URLs; this is local producer/consumer integration, not deployed CORS verification. The final 12 collector tests passed and `npm audit` reported zero vulnerabilities. Rill's 12 unit tests, 79 Firefox tests, and production build also passed. New per-board feeds have not been published or verified from the deployed Rill origin. Keep publication/CORS and current reuse-guidance limitations explicit rather than treating local success as deployment evidence.

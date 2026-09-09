@@ -1,16 +1,19 @@
 # Sogang notices
 
-A small, dependency-free collector for public Sogang University undergraduate academic notices, used by [Rill](https://hiyabye.github.io/Rill/).
+A small collector for 13 public Sogang University notice boards, used by [Rill](https://hiyabye.github.io/Rill/): undergraduate academic notices and selected Computer Science, AI, and AI-Based Liberal Studies boards.
 
 - **Source board:** https://www.sogang.ac.kr/ko/academic-support/notices
-- **Live JSON feed:** https://hiyabye.github.io/sogang-notices/notices.json
+- **Feed addresses:** `https://hiyabye.github.io/sogang-notices/feeds/<source-id>.json`
+- **Board IDs and URLs:** see `sources.mjs` and [AGENTS.md](AGENTS.md). New paths require a separately authorized schema-2 publication; local collection does not make them live.
 - **Workflow and run history:** https://github.com/Hiyabye/sogang-notices/actions/workflows/publish.yml
 
 ## What the feed contains
 
-Up to 30 recent notices with their original titles, publication dates, and source links. Pinned and regular notices are combined and ordered by registration date, not pin position. No article bodies, attachments, or login data are collected.
+Each board feed contains up to 30 recent notices with full titles, publication dates, and source links. Pins and regular notices are ordered by source date, not pin position. No article bodies, attachments, authors, or login data are collected.
 
-The collector reads the first 50 source records. If pins crowd out enough regular entries to make selection unreliable, it fails rather than publishing a misleading list. Source errors or invalid data leave the previous published feed available. An explicitly empty board can produce an empty list.
+The main board uses public JSON; departments use HTML list metadata parsed with parse5, without executing source scripts. Collection samples 50 main-site records or up to three department pages. Incomplete or inconsistent samples fail rather than publish a misleading list.
+
+A failed board retains validated previously published data with an error status. Healthy boards can still update. If any failed board has no valid recovery feed, publication stops for all boards. The first schema-2 publication therefore requires all 13 sources to succeed. A successful empty list is distinct from an unavailable source.
 
 ## Update times and freshness
 
@@ -18,7 +21,9 @@ Updates are scheduled for **00:00, 06:00, 12:00, and 18:00 UTC**, or **03:00, 09
 
 These are scheduled start times, not guaranteed completion times. [GitHub Actions can delay or drop scheduled runs during high load](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule), particularly at the start of an hour, and can disable inactive public-repository schedules.
 
-`fetchedAt` records the last successful source fetch, even when the notices have not changed. GitHub Pages currently serves the feed with a ten-minute cache lifetime. Rill fetches once when opened or reloaded and warns when the source was last checked more than 24 hours ago. Always consult the university board for authoritative information.
+`fetchedAt` records the last successful source fetch. `lastAttemptAt` records the completed attempt; `collectionStatus: "error"` means retained data is being served after a source failure. Recovery never makes old data appear newly fetched.
+
+The previous feed had a ten-minute cache lifetime. Rill v0.4 checks subscribed feeds hourly while visible and holds changed content behind **Updates available**. It warns when displayed source data is more than 24 hours old. Always consult university boards for authoritative information.
 
 ## Run locally
 
@@ -31,7 +36,7 @@ npm run collect
 ```
 
 - `npm test` is offline and does not deploy or contact Sogang.
-- `npm run collect` makes one live public request with a 20-second timeout and writes `public/notices.json` only after validation succeeds.
+- `npm run collect` fetches public lists, two boards at a time, with 20-second per-request timeouts and bounded response sizes. It stages 13 JSON files under `public/feeds/` after collection/recovery validation succeeds.
 - Local collection does **not** publish anything or change the feed Rill uses. The generated `public/` directory is intentionally ignored by Git.
 
 For architecture, source-field assumptions, testing requirements, and changes coordinated with Rill, see [AGENTS.md](AGENTS.md).
@@ -40,7 +45,10 @@ For architecture, source-field assumptions, testing requirements, and changes co
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "sourceId": "sogang-academic",
+  "collectionStatus": "ok",
+  "lastAttemptAt": "2026-09-08T12:00:00.000Z",
   "fetchedAt": "2026-09-08T12:00:00.000Z",
   "notices": [
     {
@@ -54,15 +62,15 @@ For architecture, source-field assumptions, testing requirements, and changes co
 
 This example illustrates the format, not the current live data. `notices` contains at most 30 unique entries, newest first. `publishedDate` is a source calendar date with no invented timezone; `fetchedAt` is a UTC timestamp.
 
-Observed response headers are `Content-Type: application/json; charset=utf-8`, `Access-Control-Allow-Origin: *`, and `Cache-Control: max-age=600`. No token is required to read the feed.
+Historical schema-1 response headers were `Content-Type: application/json; charset=utf-8`, `Access-Control-Allow-Origin: *`, and `Cache-Control: max-age=600`. No token is required to read the feed.
 
 ## Publish or inspect an update
 
-Before first publishing the expanded 30-notice feed, deploy the matching Rill update. Older Rill clients reject feeds larger than five notices; already-open tabs need a reload.
+Coordinate the schema-2 collector and Rill v0.4 before publication. Old clients do not understand subscription feeds; new clients cannot load unpublished paths. No compatibility layer is included. The first publication needs all 13 successful source collections.
 
 Pages uses **Settings > Pages > Build and deployment > Source > GitHub Actions**. The **Publish Sogang notices** workflow tests, collects, and deploys only the validated `public/` output using GitHub's official Pages actions.
 
-To publish immediately, open the workflow's **Run workflow** menu and select `main`. This performs a real source fetch and deployment. Inspect all steps, then check the live feed's `fetchedAt`. Failed tests, collection, or validation stop publication before deployment.
+To publish immediately, open the workflow's **Run workflow** menu and select `main`. This performs a real source fetch and deployment. Inspect all steps, then check the live feed's `fetchedAt`. Failed tests, unrecoverable source failures, invalid output, or write failures stop publication. Recovered failures appear in the workflow summary even when publication succeeds.
 
 Pushing a commit does not immediately publish a feed. The next scheduled run uses the latest code on the default branch, or you can run the workflow manually. Schedule changes take effect only after the workflow change is pushed to that branch. Deploying this repository does not deploy Rill.
 
@@ -94,6 +102,6 @@ The intermediate and source leaf were verified against Node's trusted roots befo
 
 ## Source guidance and limitations
 
-On September 8, 2026, live `robots.txt` allowed crawling. The board footer carried a general copyright statement but no linked notice-specific usage terms; an explicit reuse license was not established. Robots guidance is not a content license. Publication stays limited to public titles, dates, and source links, now for up to 30 notices. During the expansion check, `robots.txt` returned an HTML unavailable page, so current crawling guidance could not be reconfirmed.
+On September 8, 2026, live `robots.txt` allowed crawling. The board footer carried a general copyright statement but no linked notice-specific usage terms; an explicit reuse license was not established. Robots guidance is not a content license. Publication stays limited to public titles, dates, and links, at most 30 per board. Department robots responses contained malformed server-template text or unavailable HTML, so current crawling guidance could not be reliably confirmed.
 
-Live collection, GitHub Pages deployment, and Firefox access from local and deployed Rill origins have been verified. This does not guarantee future source availability, unchanged response structure, or exact scheduled execution. Development verification details are in AGENTS.md.
+All 13 boards have been collected locally with TLS verification enabled. Schema-2 per-board feeds have not yet been published or checked from deployed Rill. Historical schema-1 deployment evidence does not prove the new integration. Source availability, response structure, reuse permission, CDN freshness, and exact scheduling remain limitations. Development details are in AGENTS.md.

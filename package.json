@@ -2,9 +2,14 @@
   "name": "sogang-notices",
   "private": true,
   "type": "module",
-  "engines": { "node": "^22.18.0 || >=24.0.0" },
+  "engines": {
+    "node": "^22.18.0 || >=24.0.0"
+  },
   "scripts": {
     "test": "node --test",
     "collect": "NODE_EXTRA_CA_CERTS=certificates/sectigo-ov-r36.pem node collect.mjs"
+  },
+  "dependencies": {
+    "parse5": "^8.0.1"
   }
 }

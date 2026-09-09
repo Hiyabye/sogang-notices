@@ -3,14 +3,16 @@ import { test } from 'node:test'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { buildFeed, collect, sourceUrl } from '../collect.mjs'
+import { buildFeed, collect, collectSource, sourceUrl } from '../collect.mjs'
+import { sources, feedUrl } from '../sources.mjs'
+import { validateFeed } from '../feed.mjs'
 
 const fixture = JSON.parse(await readFile(new URL('./fixtures/board-list.json', import.meta.url), 'utf8'))
 const fetchedAt = new Date('2026-09-08T12:00:00Z')
 
 test('mixes pinned and regular notices by registration date, not board position', () => {
   const feed = buildFeed(fixture, fetchedAt)
-  assert.equal(feed.schemaVersion, 1)
+  assert.equal(feed.schemaVersion, 2)
   assert.equal(feed.fetchedAt, '2026-09-08T12:00:00.000Z')
   assert.equal(feed.notices.length, 30)
   assert.deepEqual(feed.notices.slice(0, 5).map(row => new URL(row.url).pathname), [
@@ -82,29 +84,66 @@ test('rejects malformed metadata, changed ordering, and pin saturation', () => {
   for (const invalid of [null, {}, '<html>Unavailable</html>']) assert.throws(() => buildFeed(invalid))
 })
 
-test('collector validates before writing and preserves previous output on source failures', async () => {
+test('academic requests retain timeout, TLS-safe redirect policy, and JSON checks', async () => {
+  const feed = await collectSource(sources[0], async (url, options) => {
+    assert.equal(url, sourceUrl)
+    assert.ok(options.signal instanceof AbortSignal)
+    assert.equal(options.redirect, 'error')
+    return Response.json(fixture)
+  })
+  assert.equal(feed.notices.length, 30)
+  for (const response of [new Response('Unavailable', { status: 503 }), new Response('<html>Error</html>'), Response.json({})]) {
+    await assert.rejects(collectSource(sources[0], async () => response))
+  }
+})
+
+const cms = await readFile(new URL('./fixtures/cms-list.html', import.meta.url), 'utf8')
+function cmsFixture(source) {
+  let html = cms.replaceAll('7530', String(source.board)).replaceAll('aibased', source.site)
+  if (['ai-news', 'ai-careers'].includes(source.id)) {
+    // These two templates put pinned titles directly in the anchor, without comments.
+    html = html.replace(/(<strong>\[공지\] <\/strong>)\s*<!--[\s\S]*?-->/g, '$1')
+  }
+  return html
+}
+function healthy(url) {
+  if (url === sourceUrl) return Response.json(fixture)
+  const source = sources.find(source => source.board === Number(new URL(url).searchParams.get('bbsConfigFK')))
+  assert.ok(source)
+  return new Response(cmsFixture(source), { headers: { 'Content-Type': 'text/html' } })
+}
+
+test('all-board bootstrap, recovered failures, unsafe recovery and write failures preserve publication safety', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'sogang-notices-'))
   try {
-    const target = join(directory, 'notices.json')
-    await writeFile(target, 'previous feed')
-    for (const response of [
-      new Response('Unavailable', { status: 503 }),
-      new Response('<html>Error</html>', { headers: { 'Content-Type': 'text/html' } }),
-      new Response('{bad', { headers: { 'Content-Type': 'application/json' } }),
-      Response.json({}),
-    ]) {
-      await assert.rejects(collect(directory, async () => response))
-      assert.equal(await readFile(target, 'utf8'), 'previous feed')
+    const feeds = await collect(directory, async url => healthy(url))
+    assert.equal(feeds.length, 13)
+    for (const feed of feeds) assert.deepEqual(JSON.parse(await readFile(join(directory, 'feeds', `${feed.sourceId}.json`), 'utf8')), feed)
+    const before = await readFile(join(directory, 'feeds', 'sogang-academic.json'), 'utf8')
+    const old = { ...feeds[0], fetchedAt: fetchedAt.toISOString(), lastAttemptAt: fetchedAt.toISOString() }
+    const recoveryFetcher = previous => async url => {
+      if (url === sourceUrl) return new Response('Failed', { status: 503 })
+      if (url === feedUrl(sources[0])) return Response.json(previous)
+      return healthy(url)
     }
-    await assert.rejects(collect(directory, async () => { throw new Error('Network failure') }))
-    assert.equal(await readFile(target, 'utf8'), 'previous feed')
-    const feed = await collect(directory, async (url, options) => {
-      assert.equal(url, sourceUrl)
-      assert.ok(options.signal instanceof AbortSignal)
-      assert.equal(options.redirect, 'error')
-      return Response.json(fixture)
-    })
-    assert.deepEqual(JSON.parse(await readFile(target, 'utf8')), feed)
+    for (const previous of [null, {}, { ...old, sourceId: 'cs-main' }, { ...old, schemaVersion: 1 },
+      { ...old, fetchedAt: '2999-01-01T00:00:00.000Z' }, { ...old, notices: [{ ...old.notices[0], url: 'javascript:1' }] }]) {
+      await assert.rejects(collect(directory, recoveryFetcher(previous)))
+      assert.equal(await readFile(join(directory, 'feeds', 'sogang-academic.json'), 'utf8'), before)
+    }
+    await assert.rejects(collect(directory, async url => url === sourceUrl || url === feedUrl(sources[0]) ? new Response('', { status: 404 }) : healthy(url)))
+    const recovered = await collect(directory, recoveryFetcher(old))
+    assert.equal(recovered[0].collectionStatus, 'error')
+    assert.equal(recovered[0].fetchedAt, old.fetchedAt)
+    assert.deepEqual(recovered[0].notices, old.notices)
+    assert.ok(recovered[0].lastAttemptAt >= old.lastAttemptAt)
+    assert.ok(recovered.slice(1).every(feed => feed.collectionStatus === 'ok'))
+    const file = join(directory, 'blocked')
+    await writeFile(file, 'unchanged')
+    await assert.rejects(collect(file, async url => healthy(url)))
+    assert.equal(await readFile(file, 'utf8'), 'unchanged')
+    for (const bad of [{ ...old, lastAttemptAt: '2025-01-01T00:00:00.000Z' }, { ...old, notices: Array(31).fill(old.notices[0]) },
+      { ...old, notices: [{ ...old.notices[0], publishedDate: '2026-02-30' }] }]) assert.throws(() => validateFeed(bad, sources[0]))
   } finally {
     await rm(directory, { recursive: true, force: true })
   }
