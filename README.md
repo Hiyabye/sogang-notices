@@ -4,7 +4,7 @@ A small collector for 13 public Sogang University notice boards, used by [Rill](
 
 - **Source board:** https://www.sogang.ac.kr/ko/academic-support/notices
 - **Feed addresses:** `https://hiyabye.github.io/sogang-notices/feeds/<source-id>.json`
-- **Board IDs and URLs:** see `sources.mjs` and [AGENTS.md](AGENTS.md). New paths require a separately authorized schema-2 publication; local collection does not make them live.
+- **Board IDs and URLs:** see `sources.mjs` and [AGENTS.md](AGENTS.md). The schema-2 feeds are published; local collection does not update them.
 - **Workflow and run history:** https://github.com/Hiyabye/sogang-notices/actions/workflows/publish.yml
 
 ## What the feed contains
@@ -23,7 +23,7 @@ These are scheduled start times, not guaranteed completion times. [GitHub Action
 
 `fetchedAt` records the last successful source fetch. `lastAttemptAt` records the completed attempt; `collectionStatus: "error"` means retained data is being served after a source failure. Recovery never makes old data appear newly fetched.
 
-The previous feed had a ten-minute cache lifetime. Rill v0.4 checks subscribed feeds hourly while visible and holds changed content behind **Updates available**. It warns when displayed source data is more than 24 hours old. Always consult university boards for authoritative information.
+Published feeds have a ten-minute cache lifetime. Rill v0.4 checks subscribed feeds hourly while visible and holds changed content behind **Updates available**. It warns when displayed source data is more than 24 hours old. Always consult university boards for authoritative information.
 
 ## Run locally
 
@@ -62,7 +62,7 @@ For architecture, source-field assumptions, testing requirements, and changes co
 
 This example illustrates the format, not the current live data. `notices` contains at most 30 unique entries, newest first. `publishedDate` is a source calendar date with no invented timezone; `fetchedAt` is a UTC timestamp.
 
-Historical schema-1 response headers were `Content-Type: application/json; charset=utf-8`, `Access-Control-Allow-Origin: *`, and `Cache-Control: max-age=600`. No token is required to read the feed.
+Verified schema-2 response headers are `Content-Type: application/json; charset=utf-8`, `Access-Control-Allow-Origin: *`, and `Cache-Control: max-age=600`. No token is required to read the feed.
 
 ## Publish or inspect an update
 
@@ -104,4 +104,4 @@ The intermediate and source leaf were verified against Node's trusted roots befo
 
 On September 8, 2026, live `robots.txt` allowed crawling. The board footer carried a general copyright statement but no linked notice-specific usage terms; an explicit reuse license was not established. Robots guidance is not a content license. Publication stays limited to public titles, dates, and links, at most 30 per board. Department robots responses contained malformed server-template text or unavailable HTML, so current crawling guidance could not be reliably confirmed.
 
-All 13 boards have been collected locally with TLS verification enabled. Schema-2 per-board feeds have not yet been published or checked from deployed Rill. Historical schema-1 deployment evidence does not prove the new integration. Source availability, response structure, reuse permission, CDN freshness, and exact scheduling remain limitations. Development details are in AGENTS.md.
+All 13 schema-2 feeds were published and verified from local and deployed Rill in Firefox on September 9, 2026, with TLS verification enabled. Source availability, response structure, reuse permission, CDN freshness, and exact scheduling remain limitations. Development details are in AGENTS.md.
