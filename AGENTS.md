@@ -10,6 +10,14 @@
 - Preserve unrelated changes. Never manually edit the lockfile or generated `public/`. Do not commit output, cookies, private keys, credentials, or private source data.
 - Commits, pushes, deployment, and live scheduling changes require explicit authorization. Commit format is `label: concise title`, followed by a short body. No agent attribution.
 
+## Bellarmine implementation boundary
+
+The owner approved the full proposal in Rill's `PLAN.md` and local commits in both repositories. No push, deployment, or publication is authorized. The narrow scope exception is Bellarmine's public board 1185/site dormitory, menu articles/images, isolated Python/PaddleOCR and a separate future meal JSON; it does not expand any notice board's list-only contract.
+
+`ocr/` currently contains only the local full-layout feasibility diagnostic, synthetic tests, exact dependency lock and model-asset manifest. It is not imported by the notice collector, invoked by npm tests, or deployed by the workflow. Read `ocr/README.md` for commands, observed failures and remaining gates. All five current real-image samples still fail a date/layout/quality gate. The owner reaffirmed continued strict automatic-extraction hardening after these results, not weakened checks or an image-widget fallback. Do not treat exit zero or diagnostic `publicationReady: false` as a publishable meal result.
+
+Keep Python dependencies isolated; generated `ocr/requirements.lock` changes only through its documented resolver command. Models, real source images, diagnostic output and Python caches are not committed or published. Permitted real-image fixtures/full human ground truth, an accepted unseen normal week, Linux inference and complete supply-chain/license review remain outstanding. Source-use/image-redistribution permission remains a separate release gate. Do not wire publication or Rill to unvalidated full-table output.
+
 ## Responsibilities and data flow
 
 `Public university JSON / source-specific list HTML -> validated metadata and pagination -> per-board feeds -> staged public/feeds -> GitHub Pages -> Rill`

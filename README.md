@@ -34,6 +34,10 @@ These are scheduled start times, not guaranteed completion times. [GitHub Action
 
 Published feeds were observed with a ten-minute cache lifetime. Rill checks subscribed feeds hourly while visible and holds changed content behind **새 공지 반영**. It warns when displayed source data is more than 24 hours old. Always consult university boards for authoritative information.
 
+## Bellarmine meal work
+
+Bellarmine meal extraction is under development and is **not yet published or available in Rill**. The existing notice commands and feeds are unchanged. The opt-in local OCR diagnostic, setup instructions and unresolved full-layout checks are documented in [ocr/README.md](ocr/README.md). It never publishes meals or runs as part of ordinary notice collection.
+
 ## Run locally
 
 Use Node 22.18+ on the 22.x line, or Node 24+, with npm. The collection command uses POSIX shell syntax, supported on macOS and the Ubuntu workflow.
