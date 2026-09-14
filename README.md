@@ -36,7 +36,7 @@ Published feeds were observed with a ten-minute cache lifetime. Rill checks subs
 
 ## Bellarmine meal work
 
-The complete Bellarmine pipeline is implemented but **has not been released or verified on Linux**. Full real-week OCR acceptance and source-use permission remain release gates. Existing `npm run collect` notice-only behavior and all 41 notice schemas are unchanged.
+Bellarmine bootstrap was [published on September 14, 2026](https://github.com/Hiyabye/sogang-notices/actions/runs/34839647879), after the owner confirmed source-use permission. Linux installation, tests and OCR execution succeeded. **The published meal feed currently contains no dishes:** validation rejected the source's conflicting dates and published `unavailable` / `date-mismatch`. Successful real full-week extraction is still unverified. Existing `npm run collect` notice-only behavior and all 41 notice schemas are unchanged.
 
 The single publication workflow now prepares notices and bounded meal inputs, conditionally runs isolated CPU OCR, validates/stages the whole site, then deploys on a separate credentialed runner. The meal path is `https://hiyabye.github.io/sogang-notices/meals/bellarmine.json`, independent schema 1. It contains up to two dated weeks, structured offerings and original-post provenance, not source images, contact information or raw OCR boxes. Cup rice is separate from dinner/breakfast, not an inferred daily lunch service.
 

@@ -4,7 +4,7 @@ This directory contains the local diagnostic and the conditional publication wor
 
 ## Run
 
-Use an isolated Python 3.13 environment. The generated lock pins packages and hashes, with Linux x86-64 wheel resolution; actual inference has only been exercised on macOS ARM64 so far.
+Use an isolated Python 3.13 environment. The generated lock pins packages and hashes, with Linux x86-64 wheel resolution; the rejection path has been exercised on macOS ARM64 and Ubuntu in publication run 34839647879. No accepted real full-week extraction has been established.
 
 ```sh
 python3.13 -m venv .venv-ocr
@@ -84,6 +84,6 @@ uv pip compile ocr/requirements.in --python-version 3.13 \
   --generate-hashes --output-file ocr/requirements.lock
 ```
 
-The direct packages are the exact PaddleOCR/PaddlePaddle/PaddleX/Pillow/OpenCV/NumPy versions used during research. Resolution contains only pinned registry dependencies, no VCS/local packages; install wheels with hash checking, never source build hooks. Linux-target hash-locked dry-run resolution succeeded, but Linux installation and inference remain unverified. The original benchmark reused the research environment. The complete worker was subsequently exercised in a clean hash-locked macOS Python 3.13.13 environment, with live Bellarmine inputs and a Python socket-connect guard. That run rejected post 940528 for its conflicting dates and produced typed unavailable output through Node assembly. It does not establish Linux execution or real full-week acceptance.
+The direct packages are the exact PaddleOCR/PaddlePaddle/PaddleX/Pillow/OpenCV/NumPy versions used during research. Resolution contains only pinned registry dependencies, no VCS/local packages; install wheels with hash checking, never source build hooks. Linux-target hash-locked installation, tests and inference succeeded in publication run 34839647879. The original benchmark reused the research environment. The complete worker was subsequently exercised in a clean hash-locked macOS Python 3.13.13 environment, with live Bellarmine inputs and a Python socket-connect guard. That run rejected post 940528 for its conflicting dates and produced typed unavailable output through Node assembly. The subsequent Linux publication run rejected the same image bytes with date-mismatch. Neither run establishes real full-week acceptance.
 
 Installed direct-package metadata identifies Paddle and OpenCV as Apache-2.0, Pillow as MIT-CMU and NumPy as BSD with bundled-library notices. Both pinned model cards declare Apache-2.0. This is metadata review, not complete transitive license/provenance certification; source reuse permission is separate. `npm audit` and a no-install `pip-audit` of the complete locked package list reported no known vulnerabilities during this checkpoint. Recheck advisories and platform-specific wheels before CI integration. A Python socket-connect audit guard passed during the hardened local benchmark; this is not an OS/native-library network sandbox.
