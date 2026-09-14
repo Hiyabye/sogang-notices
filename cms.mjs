@@ -42,7 +42,7 @@ export function parseCmsPage(html, source, currentPage) {
         !/^[1-9]\d*$/.test(id ?? '') || !Number.isSafeInteger(Number(id))) throw new SourceError('Invalid CMS article identity.')
     const comments = descendants(link, node => node.nodeName === '#comment')
     const pinned = descendants(link, node => node.tagName === 'strong').some(node => clean(text(node)) === '[공지]')
-    const directTitle = pinned && ['ai-news', 'ai-careers', 'computing-notices', 'eng-careers'].includes(source.id)
+    const directTitle = pinned && ['ai-news', 'ai-careers', 'computing-notices', 'eng-careers', 'bellarmine'].includes(source.id)
     if (!gallery && comments.length !== (directTitle ? 0 : 1)) throw new SourceError('Missing full CMS title.')
     // Comments contain the untruncated title with HTML entities. RCDATA decodes
     // those entities without interpreting title text as markup or executing it.

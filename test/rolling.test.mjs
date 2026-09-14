@@ -165,11 +165,11 @@ test('workflow uses hourly minute-17 runs and a safely passed explicit full-refr
   const yaml = await readFile(new URL('../.github/workflows/publish.yml', import.meta.url), 'utf8')
   assert.match(yaml, /cron: '17 \* \* \* \*'/)
   assert.match(yaml, /default: rolling/)
-  assert.match(yaml, /options:\s+- rolling\s+- full/)
+  assert.match(yaml, /options: \[rolling, full\]/)
   assert.match(yaml, /COLLECTION_MODE: \$\{\{ inputs\.mode \|\| 'rolling' \}\}/)
-  assert.match(yaml, /run: npm run collect -- "--mode=\$COLLECTION_MODE"/)
+  assert.match(yaml, /run: npm run meals:prepare -- "--notice-mode=\$COLLECTION_MODE" "--meal-mode=\$MEAL_MODE"/)
   assert.match(yaml, /cancel-in-progress: false/)
-  assert.match(yaml, /path: public/)
+  assert.match(yaml, /path: meal-site/)
   const directory = await mkdtemp(join(tmpdir(), 'rolling-cli-'))
   try {
     for (const args of [['--mode=invalid'], ['--mode=full', '--unknown']]) {

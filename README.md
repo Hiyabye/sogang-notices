@@ -12,7 +12,7 @@ A small collector for 41 public Sogang University notice boards, used by [Rill](
 
 ## What the feed contains
 
-Each board feed contains up to 30 recent notices with list titles, publication dates, and source links. Pins and regular notices are ordered by source date, not pin position. Only list pages are requested; article pages, attachments and login-only material are not fetched. Summaries or article bodies bundled in a list response are ignored, and feeds contain no authors or images.
+Each board feed contains up to 30 recent notices with list titles, publication dates, and source links. Pins and regular notices are ordered by source date, not pin position. Notice collection requests only list pages, not articles, attachments or login-only material. The separate Bellarmine meal path below has a narrow public menu-article/image exception. Summaries or article bodies bundled in a list response are ignored, and feeds contain no authors or images.
 
 CMS comments supply full titles where available. Some new source lists shorten titles without supplying the full text; the feed preserves the available text rather than fetching articles. Electronic Engineering also emits one Korean job-title shape as unescaped markup; its exact literal text is safely retained. Other missing or malformed titles remain errors.
 
@@ -36,7 +36,13 @@ Published feeds were observed with a ten-minute cache lifetime. Rill checks subs
 
 ## Bellarmine meal work
 
-Bellarmine meal extraction is under development and is **not yet published or available in Rill**. The existing notice commands and feeds are unchanged. The opt-in local OCR diagnostic, setup instructions and unresolved full-layout checks are documented in [ocr/README.md](ocr/README.md). It never publishes meals or runs as part of ordinary notice collection.
+The complete Bellarmine pipeline is implemented but **has not been released or verified on Linux**. Full real-week OCR acceptance and source-use permission remain release gates. Existing `npm run collect` notice-only behavior and all 41 notice schemas are unchanged.
+
+The single publication workflow now prepares notices and bounded meal inputs, conditionally runs isolated CPU OCR, validates/stages the whole site, then deploys on a separate credentialed runner. The meal path is `https://hiyabye.github.io/sogang-notices/meals/bellarmine.json`, independent schema 1. It contains up to two dated weeks, structured offerings and original-post provenance, not source images, contact information or raw OCR boxes. Cup rice is separate from dinner/breakfast, not an inferred daily lunch service.
+
+Bad source dates, unknown layouts and uncertain/clipped extraction are rejected. A failed attempt preserves complete last-good weeks and their real verification/extraction times. Explicit first-time bootstrap can produce `unavailable` with no weeks; this is not an empty successful menu. An unavailable/corrupt required baseline stops subsequent rolling preparation before university requests. Unchanged validated image bytes plus the same pipeline fingerprint skip OCR; changed bytes or processing rules require it again.
+
+After separate release approval, the **first meal publication must use `meal_mode: bootstrap`**. Use notice `mode: rolling` if all 41 published notice feeds already exist, or `full` only for intentional notice bootstrap/repair. Do not push this workflow expecting unattended rolling runs to initialize a missing meal baseline. Run/deployment scheduling and actual CORS still require live verification. See [ocr/README.md](ocr/README.md) for setup and unresolved source-image failures.
 
 ## Run locally
 
@@ -52,7 +58,18 @@ npm run collect -- --mode=full        # Explicit full bootstrap/repair
 - `npm test` is offline and does not deploy or contact Sogang.
 - `npm run collect` first downloads and validates all prior feeds from GitHub Pages, then refreshes only the oldest batch. GitHub reads do not contact the university. At most two boards are collected at once; university request starts are globally spaced by at least one second, even across hostnames. Both modes retain 20-second request timeouts, byte limits and bounded pagination.
 - Both modes stage the complete 41-file set under `public/feeds/` only after validation succeeds. Carried feeds keep their original timestamps and error status. A local full run does not initialize the published baseline: its output must be published before rolling runs can use it.
-- Local collection does **not** publish anything or change the feed Rill uses. The generated `public/` directory is intentionally ignored by Git.
+- Local collection does **not** publish anything or change the feed Rill uses. Generated output is ignored by Git.
+
+For the complete, explicitly initialized meal pipeline, after installing the isolated Python environment and pinned model assets described in `ocr/README.md`:
+
+```sh
+npm run meals:prepare -- --meal-mode=bootstrap --notice-mode=rolling
+# Run only when prepared.json has candidates without a reused result:
+.venv-ocr/bin/python ocr/run_bellarmine.py --work work --models ocr/models
+npm run meals:assemble
+```
+
+Use `--meal-mode=rolling` after publication; bootstrap intentionally does not use a previous meal baseline. `work/` must be empty before preparation. Preserve or move old work aside rather than mixing runs. Preparation writes an empty OCR result file when no OCR is needed. Assembly revalidates the prepared data, source/image/pipeline identities and all 41 notice feeds, and creates a fresh `meal-site/` containing only `feeds/` and `meals/`. It refuses replacing an existing complete site. Move that output aside before another assembly. No source images, models or diagnostic crops belong in the Pages artifact. These commands do not deploy.
 
 For architecture, source-field assumptions, testing requirements, and changes coordinated with Rill, see [AGENTS.md](AGENTS.md).
 
@@ -83,7 +100,7 @@ Verified schema-2 response headers are `Content-Type: application/json; charset=
 
 Publish new collector paths before publishing the matching Rill catalog: clients cannot load unpublished feeds. The college additions retain feed schema 2 and all existing IDs. Older Rill versions do not recognize the new subscription IDs, so use an updated version when transferring backups containing them. Use explicit full mode for first publication or after adding boards. A clean bootstrap needs all 41 successful collections; existing boards may recover from valid prior feeds.
 
-Pages uses **Settings > Pages > Build and deployment > Source > GitHub Actions**. The **Publish Sogang notices** workflow tests, collects, and deploys only the validated `public/` output using GitHub's official Pages actions.
+Pages uses **Settings > Pages > Build and deployment > Source > GitHub Actions**. The **Publish Sogang notices** workflow tests, collects, and deploys only the validated `meal-site/` output using GitHub's official Pages actions. Preparation, conditional OCR and assembly have read-only repository permissions; only the separate deploy job has Pages/OIDC write permissions. An OCR crash, timeout or installation failure blocks assembly rather than masquerading as a skipped/rejected source.
 
 To publish immediately, open the workflow's **Run workflow** menu and select `main`. Choose **rolling** for one batch, or **full** for an intentional bootstrap/repair that contacts every board. The scheduled path always uses rolling mode. This performs a real source fetch and deployment. Inspect all steps, then check the live feed's `fetchedAt`. Failed tests, unrecoverable source failures, invalid output, or write failures stop publication. Recovered failures appear in the workflow summary even when publication succeeds.
 
@@ -126,6 +143,6 @@ Tests verify both fingerprints, CA flags, signatures, validity periods, and the 
 
 ## Source guidance and limitations
 
-On September 8, 2026, live `robots.txt` allowed crawling. The board footer carried a general copyright statement but no linked notice-specific usage terms; an explicit reuse license was not established. Robots guidance is not a content license. Publication stays limited to public titles, dates, and links, at most 30 per board. Department robots responses contained malformed server-template text or unavailable HTML. The Computing and Engineering college hosts returned 404 HTML for robots.txt, so their current guidance could not be reliably confirmed. Electronic and System Semiconductor Engineering disallow internal/admin directories but not the selected `/kor/` lists. Mechanical Engineering permits pages but disallows `/api`, `/admin` and `/adm`; the collector uses only the public `/ko/board/` HTML. Semiconductor Engineering permits crawling. These observations do not establish reuse licensing.
+On September 8, 2026, live `robots.txt` allowed crawling. The board footer carried a general copyright statement but no linked notice-specific usage terms; an explicit reuse license was not established. Robots guidance is not a content license. Notice publication stays limited to public titles, dates, and links, at most 30 per board. Bellarmine extraction/publication and image-fixture redistribution require their separate source-use review before release. Department robots responses contained malformed server-template text or unavailable HTML. The Computing and Engineering college hosts returned 404 HTML for robots.txt, so their current guidance could not be reliably confirmed. Electronic and System Semiconductor Engineering disallow internal/admin directories but not the selected `/kor/` lists. Mechanical Engineering permits pages but disallows `/api`, `/admin` and `/adm`; the collector uses only the public `/ko/board/` HTML. Semiconductor Engineering permits crawling. These observations do not establish reuse licensing.
 
 All 13 schema-2 feeds were published and verified from local and deployed Rill in Firefox on September 9, 2026, with TLS verification enabled. Source availability, response structure, reuse permission, CDN freshness, and exact scheduling remain limitations. Development details are in AGENTS.md.

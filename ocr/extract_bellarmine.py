@@ -221,7 +221,7 @@ def read_region(ocr, rgb, name):
     covered = np.zeros((height, width), dtype=np.uint8)
     lines = []
     for text, score, box in zip(texts, scores, boxes):
-        require(isinstance(text, str) and 0 < len(text.strip()) <= 120 and
+        require(isinstance(text, str) and 0 < len(text.strip().encode("utf-16-le")) // 2 <= 120 and
                 math.isfinite(score) and 0 <= score <= 1 and len(box) == 4,
                 "ocr-quality", name)
         left, top, right, bottom = map(int, box)
@@ -242,7 +242,7 @@ def read_region(ocr, rgb, name):
         line.append(box)
     if line:
         ordered.append(" ".join(item[4] for item in sorted(line, key=lambda item: item[2])))
-    require(all(len(text) <= 120 for text in ordered), "ocr-quality", name)
+    require(all(len(text.encode("utf-16-le")) // 2 <= 120 for text in ordered), "ocr-quality", name)
     # Diagnostic, deliberately not an accepted confidence threshold. Date/label
     # regions have colored/gray backgrounds; coverage only measures white cells.
     uncovered = 0
@@ -276,7 +276,7 @@ def validate_menu_regions(regions):
         require(not region["clipped"], "layout", name)
         require(region["uncoveredPixels"] == 0, "ocr-quality", name)
         texts = region["texts"]
-        require(len(texts) <= 12, "ocr-quality", name)
+        require(len(texts) <= (13 if name.endswith(".cupRice") else 12), "ocr-quality", name)
         if not texts:
             require(region["minimumScore"] is None, "ocr-quality", name)
             continue
@@ -302,7 +302,11 @@ def model_directories(root):
     for model in manifest["models"]:
         directory = Path(root) / model["name"]
         for filename, expected in model["files"].items():
-            actual = hashlib.sha256((directory / filename).read_bytes()).hexdigest()
+            with (directory / filename).open("rb") as stream:
+                raw = stream.read(32 * 1024 * 1024 + 1)
+            if len(raw) > 32 * 1024 * 1024:
+                raise RuntimeError("Model asset exceeds byte limit")
+            actual = hashlib.sha256(raw).hexdigest()
             if actual != expected:
                 # Bad installation/cache is infrastructure failure, not source rejection.
                 raise RuntimeError("Model asset hash mismatch")

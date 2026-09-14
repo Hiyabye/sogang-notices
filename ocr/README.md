@@ -1,6 +1,6 @@
 # Bellarmine OCR feasibility gate
 
-This is a local diagnostic, **not a meal collector or publisher**. The full-layout gate in Rill's `PLAN.md` has not passed. Nothing here is invoked by `npm test`, `npm run collect`, or the Pages workflow. No Rill runtime dependency, feed schema, source catalog, or deployment policy has changed.
+This directory contains the local diagnostic and the conditional publication worker. The full-layout release gate in Rill's `PLAN.md` has not passed: no real full-week benchmark is accepted yet. The owner approved implementing the complete downstream pipeline while retaining that release gate. Ordinary `npm test` and `npm run collect` remain Python-free; the expanded Pages workflow invokes `run_bellarmine.py` only for images without reusable validated results. No Python runs in Rill.
 
 ## Run
 
@@ -30,7 +30,7 @@ models/
     inference.pdiparams
 ```
 
-Each asset's pinned download URL is `<source>/resolve/<revision>/<filename>`, using the manifest fields. Download/setup is a separate operator step. The diagnostic requires existing local directories and verifies every asset's SHA-256 before constructing PaddleOCR. Missing/corrupt model assets are infrastructure errors, not recoverable source failures. All eight hashes were independently checked against the pinned public model revisions. Neither downloaded models nor source images belong in Git or the Pages artifact.
+Each asset's pinned download URL is `<source>/resolve/<revision>/<filename>`, using the manifest fields. Download/setup is a separate operator step: `.venv-ocr/bin/python ocr/download_models.py --output ocr/models`. Downloads and cache reads have a 32-MiB per-asset ceiling and must match the pinned hashes; corrupt caches require explicit repair. The diagnostic requires existing local directories and verifies every asset's SHA-256 before constructing PaddleOCR. Missing/corrupt model assets are infrastructure errors, not recoverable source failures. All eight hashes were independently checked against the pinned public model revisions. Neither downloaded models nor source images belong in Git or the Pages artifact.
 
 ```sh
 .venv-ocr/bin/python ocr/extract_bellarmine.py /absolute/path/940139.jpg \
@@ -46,7 +46,9 @@ Each asset's pinned download URL is `<source>/resolve/<revision>/<filename>`, us
 
 The benchmark expects the five filenames and independently inspected title periods in `CASES`. It does not download images. Keep local source images and diagnostic outputs outside Git. Permission to redistribute source images or extracted menus remains a release gate; no real image fixture is committed.
 
-A source/layout rejection produces diagnostic JSON. Unexpected model/engine/filesystem failures exit unsuccessfully. **A successful process exit is not an accepted meal.** Every result explicitly sets `publicationReady: false`; there is no production meal-interchange or publication path yet. The operator owns the explicit output path. Run the opt-in benchmark with an external process timeout; it is not yet an isolated CI worker.
+A source/layout rejection produces diagnostic JSON. Unexpected model/engine/filesystem failures exit unsuccessfully. **A successful process exit is not an accepted meal.** Diagnostic outputs explicitly set `publicationReady: false` and are not meal feeds. The operator owns the explicit diagnostic output path.
+
+The separate worker runs as `.venv-ocr/bin/python ocr/run_bellarmine.py --work work --models ocr/models`. It bounds/validates preparation and image identity, checks image/layout before initializing an engine, and requires every date/anchor/quality check to pass before converting source lines into structured days. Blank days do not inherit invented shared service; cup rice keeps its observed time, and explicit closure stays separate from unlisted data. The worker binds each `ok` or typed `rejected` result to the exact image hash and pipeline ID. Node assembly independently validates all output, so diagnostic files cannot be substituted for worker results. Infrastructure errors and the workflow's 300-second process timeout fail the job. Only the expanded read-only OCR job runs this worker; deployment is on a separate runner.
 
 ## Implemented checks
 
@@ -70,7 +72,7 @@ Both benchmark passes processed **225 regions across five images**, including We
 
 All five currently fail at least one gate. **There is still no accepted real full-week benchmark.** This conservative rejection result does not establish useful production availability. The owner explicitly chose continued automatic-extraction hardening, not an image widget or mandatory manual publication.
 
-Do not fix this by trimming a fixed strip from every Western cell: enlarged inspection showed that the strawberry/banner area reaches the first dish's pixels. Next work needs reviewed decoration/template handling that retains every dish, durable permitted image fixtures, full-cell human ground truth and an unseen normal week. Finish that feasibility work before building the meal publisher/workflow or wiring Rill to it. No confidence cutoff establishes correct spelling, and synthetic tests do not establish arbitrary-layout safety.
+Do not fix this by trimming a fixed strip from every Western cell: enlarged inspection showed that the strawberry/banner area reaches the first dish's pixels. Next work needs reviewed decoration/template handling that retains every dish, durable permitted image fixtures, full-cell human ground truth and an unseen normal week. Finish that feasibility work before release. The publisher/workflow and Rill widget are now implemented with strict failure/recovery behavior; this does not make OCR production-ready. No confidence cutoff establishes correct spelling, and synthetic tests do not establish arbitrary-layout safety.
 
 ## Dependency maintenance
 
@@ -82,6 +84,6 @@ uv pip compile ocr/requirements.in --python-version 3.13 \
   --generate-hashes --output-file ocr/requirements.lock
 ```
 
-The direct packages are the exact PaddleOCR/PaddlePaddle/PaddleX/Pillow/OpenCV/NumPy versions used during research. Resolution contains only pinned registry dependencies, no VCS/local packages; install wheels with hash checking, never source build hooks. Linux-target hash-locked dry-run resolution succeeded, but Linux installation and inference remain unverified. The macOS benchmark reused the isolated research environment, not a fresh lockfile installation.
+The direct packages are the exact PaddleOCR/PaddlePaddle/PaddleX/Pillow/OpenCV/NumPy versions used during research. Resolution contains only pinned registry dependencies, no VCS/local packages; install wheels with hash checking, never source build hooks. Linux-target hash-locked dry-run resolution succeeded, but Linux installation and inference remain unverified. The original benchmark reused the research environment. The complete worker was subsequently exercised in a clean hash-locked macOS Python 3.13.13 environment, with live Bellarmine inputs and a Python socket-connect guard. That run rejected post 940528 for its conflicting dates and produced typed unavailable output through Node assembly. It does not establish Linux execution or real full-week acceptance.
 
 Installed direct-package metadata identifies Paddle and OpenCV as Apache-2.0, Pillow as MIT-CMU and NumPy as BSD with bundled-library notices. Both pinned model cards declare Apache-2.0. This is metadata review, not complete transitive license/provenance certification; source reuse permission is separate. `npm audit` and a no-install `pip-audit` of the complete locked package list reported no known vulnerabilities during this checkpoint. Recheck advisories and platform-specific wheels before CI integration. A Python socket-connect audit guard passed during the hardened local benchmark; this is not an OS/native-library network sandbox.

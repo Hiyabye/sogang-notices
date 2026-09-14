@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "bellarmine",
+  "timezone": "Asia/Seoul",
+  "collectionStatus": "unavailable",
+  "lastAttemptAt": "2026-09-08T12:00:00.000Z",
+  "fetchedAt": null,
+  "errorCode": "source",
+  "weeks": []
+}
