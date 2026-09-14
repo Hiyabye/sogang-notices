@@ -2,7 +2,7 @@
 
 ## Scope and conventions
 
-- Keep this collector separate from [Rill](https://github.com/Hiyabye/Rill). It publishes public notice-list metadata for the 15 boards in `sources.mjs`, not a runtime backend.
+- Keep this collector separate from [Rill](https://github.com/Hiyabye/Rill). It publishes public notice-list metadata for the 41 boards in `sources.mjs`, not a runtime backend.
 - Use npm, the lockfile, native Node fetch, and the built-in test runner. parse5 is the approved HTML parser; do not execute source JavaScript or add browser automation. Rill does not scrape or run this collector; its frontend dependencies are governed by its own instructions.
 - Support Node 22.18+ on 22.x, or Node 24+; GitHub Actions uses Node 24. Use two-space indentation, single-quoted JavaScript strings, and semicolon-free style.
 - Ask before dependencies, other boards, articles, attachments, login-only material, or persistent services. No RSS, arbitrary URL registry, plugin framework, database, or custom recovery service.
@@ -12,13 +12,18 @@
 
 ## Responsibilities and data flow
 
-`Main-site public JSON / department CMS HTML -> validated source selection -> per-board feeds -> staged public/feeds -> GitHub Pages -> Rill`
+`Public university JSON / source-specific list HTML -> validated metadata and pagination -> per-board feeds -> staged public/feeds -> GitHub Pages -> Rill`
 
 - `sources.mjs`: explicit source IDs, CMS site/board/host tuples, board pagination URLs, and fixed published recovery URLs. No user configuration.
 - `collect.mjs`: main-site `buildFeed`, bounded request I/O, `collectSource`, two-source concurrency, recovery, final validation, staging, and workflow summary. Expected source failures use `SourceError`; programming and infrastructure faults propagate and stop publication.
-- `cms.mjs`: parse5-based pure CMS list parsing and selection. Never execute scripts or fetch article content.
+- `cms.mjs`: pure CMS list and newsletter-gallery parsing, including comment titles and explicit page sizes.
+- `community.mjs`: Electronic/System Semiconductor PHP table and gallery skins, board headings, code/ID identity and list-title extraction.
+- `mechanical.mjs`: Mechanical Engineering's server-rendered table only; never parse or execute Next.js hydration scripts or use `/api`.
+- `semiconductor.mjs`: Semiconductor board identity, numbered lists and separately repeated pins.
+- `html.mjs`: shared parse5 traversal, field/URL/date validation and per-page completeness checks.
+- `list.mjs`: shared cross-page count/order checks, distinct regular sampling and final metadata-only selection.
 - `feed.mjs`: strict schema-2 recovery/final-output validation and the explicit source-failure error type. Do not catch final validation as recoverable source failure.
-- `certificates/sectigo-ov-r36.pem`: verified public intermediate omitted by Sogang's TLS server. `package.json` supplies it only to `npm run collect` via `NODE_EXTRA_CA_CERTS`.
+- `certificates/sogang-intermediates.pem`: the verified Sectigo OV R36 and GoGetSSL RSA DV SSL CA 2 public intermediates omitted by the source servers. `package.json` supplies it only to `npm run collect` via `NODE_EXTRA_CA_CERTS`.
 - `test/collect.test.mjs`: main-site validation, sampling, recovery/bootstrap, all-board output, and persistence failure checks with local responses/temp directories.
 - `test/cms.test.mjs`, `test/fixtures/cms-list.html`, `test/fixtures/cms-empty.html`: full comment titles, pins, sparse lists, identity, ordering, malformed input, and incomplete sampling. Fixtures retain public list metadata and remove authors; no article bodies/attachments.
 - `test/fixtures/board-list.json`: reduced main-site metadata with Korean titles and pinned/regular ordering.
@@ -30,7 +35,7 @@
 
 ### Catalog and access
 
-The 15 IDs must agree with Rill's `src/notice-sources.ts`. Source order: University-wide, College of Computing announcements/news, Computer Science, AI, AI-Based Liberal Studies. Rill groups the college and its three departments under 소프트웨어융합대학; this presentation metadata does not change feed schema 2 or the original 13 IDs. Further board additions still need approval. The college menu maps 공지사항 to 7332 and SW융합대학 News to 7333; Dean's List (7334) is not approved for collection.
+The 41 IDs must agree with Rill's `src/notice-sources.ts`. Source order: University-wide, College of Computing announcements/news, Computer Science, AI, AI-Based Liberal Studies. Rill groups the college and its three departments under 소프트웨어융합대학; this presentation metadata does not change feed schema 2 or the existing 15 IDs. Engineering's 26 boards append after those original 15 entries, in college, Electronic, Mechanical, System Semiconductor, Semiconductor order. Further board additions still need approval. The college menu maps 공지사항 to 7332 and SW융합대학 News to 7333; Dean's List (7334) is not approved for collection.
 
 | Source ID | Site | Board | Host prefix |
 | --- | --- | --- | --- |
@@ -49,12 +54,32 @@ The 15 IDs must agree with Rill's `src/notice-sources.ts`. Source order: Univers
 | ai-careers | ai | 5131 | ai |
 | aibased-notices | aibased | 7510 | scc |
 | aibased-news | aibased | 7530 | scc |
+| eng-academic | eng | 1628 | eng |
+| eng-research | eng | 1627 | eng |
+| eng-general | eng | 1624 | eng |
+| eng-careers | eng | 8290 | eng |
+| eng-newsletter | eng | 1621 | eng |
 
 - CMS list: `https://<host>.sogang.ac.kr/front/cmsboardlist.do?bbsConfigFK=<board>&siteId=<site>&currentPage=<page>`. Menu scripts and forms confirm these mappings. Board 7510 is labeled 공지사항 in Rill by owner decision, despite its page title 게시판.
-- All 12 department boards and both college boards returned server-rendered HTML during investigation. Inspected board/common scripts exposed no structured list API. Full regular titles are in anchor comments where visible text can be truncated. Pinned titles on AI news/careers and college announcements are direct anchor text without comments; other supported pinned templates use comments. No pins were observed on college news, so an unrecognized future pin template must fail closed rather than infer a full title. Treat these as observed explicit templates, not a generic fallback scraper.
+- All 12 department boards and both college boards returned server-rendered HTML during investigation. Inspected board/common scripts exposed no structured list API. Full regular titles are in anchor comments where visible text can be truncated. Pinned titles on AI news/careers, Computing announcements and Engineering careers are direct anchor text without comments; other supported pinned templates use comments. No pins were observed on college news, so an unrecognized future pin template must fail closed rather than infer a full title. Treat these as observed explicit templates, not a generic fallback scraper.
 - Parse HTML with parse5. Decode comment entities as RCDATA without interpreting title markup. Exclude the pin badge, authors, views, attachments, and scripts. Validate board/site hidden inputs, current page, page count, title link identity, dates, regular ordinal continuity, expected page size, and cross-page total consistency. A malformed/error page is never a successful empty source.
-- Department CMS boards return ten regular rows plus pins. The two college sources explicitly set `pageSize: 15` in `sources.mjs`; no page-size inference from a possibly truncated response is allowed. Pagination, ordinals and completeness use that exact size. Read enough pages to sample 30 regular rows (three department pages or two college pages), or all pages if fewer. Require 30 distinct regular records while additional pages exist, validate within-group/cross-page date ordering, and fail rather than weakening sampling. Mix pins and regular rows by date descending, then descending ID; retain 30 unique entries. A confirmed empty first page uses the observed `li.nothing` message (`검색된 게시물이 없습니다.`) without paging controls. Require the expected board/site and reject unexpected nonempty search filters; absent/malformed list structure is an error.
+- Department CMS boards return ten regular rows plus pins. The two Computing sources explicitly set `pageSize: 15` and Engineering careers sets `pageSize: 12` in `sources.mjs`; no page-size inference from a possibly truncated response is allowed. Pagination, ordinals and completeness use that exact size. Read enough pages to sample 30 regular rows, or all pages if fewer. Engineering newsletters use the explicit twelve-card `board_photo_list` gallery, with safe visible titles and dates. Its mobile pagination copy is not another list. It exposes page count but no independent item total or row ordinals: check exact non-final page size, bounded nonempty final pages, unique URLs and consistent page counts instead. Require 30 distinct regular records while additional pages exist, validate within-group/cross-page date ordering, and fail rather than weakening sampling. Mix pins and regular rows by date descending, then descending ID; retain 30 unique entries. A confirmed empty first page uses the observed `li.nothing` message (`검색된 게시물이 없습니다.`) without paging controls. Require the expected board/site and reject unexpected nonempty search filters; absent/malformed list structure is an error.
 - Canonical CMS links retain verified origin, `/front/cmsboardview.do`, `bbsConfigFK`, `siteId`, and `pkid`. Drop only list-navigation/search fields. Do not infer global `pkid` uniqueness, collapse different board records, or normalize host aliases without new evidence. Rill merges exact URLs only; similarly titled cross-posts with different IDs remain separate.
+
+### Engineering non-CMS lists
+
+The approved additions are college academic/research/general/careers/newsletter (5), Electronic news/general/academic/seminars/employment/recruitment (6), Mechanical general/academic/research/awards/careers/events/alumni (7), System Semiconductor notices/news/seminars (3), and Semiconductor notices/graduate/news/careers/industry (5). No Dean's List, other department, resource archive, video or photo-gallery board was approved. `sources.mjs` owns the exact IDs, labels and routes:
+
+- EE: `/kor/community/notice01.php` (news, 12-card gallery), `notice02.php` (general), `notice03.php` (academic), `seminar.php` (seminar), `employment.php` (jobs), and `/kor/recruit/recruit.php` (recruit). The parenthesized code is required in article URLs. Other pages have ten rows. Preserve exact host/path, `m=v`, `idx`, and code; remove navigation state.
+- SSE: `/kor/community/notice.php`, `news.php` (nine-card gallery), `seminar.php`. These have no code parameter; notices/seminars use ten rows. Preserve host/path and `m=v&idx`.
+- ME: `/ko/board/{notice,academic,research,award,scholarship,events,alumni_news}`, fifteen-row server-rendered tables. Canonical articles are the corresponding path plus the positive numeric article ID. Read the DOM table, not scripts, summaries or hidden serialized content.
+- SE: `/board/board_list.php?board_id={notice,notice_master,news,recruit,notice_industry}`, ten regular rows plus separately repeated pins. Canonical articles retain `/board/board_view.php`, board_id and no. Pins legitimately retain page=1 even on later list pages; current-page validation belongs to the list pager, not an article's navigation query.
+
+Community and ME pins consume page slots. Validate total/count, fixed size, current/last page, ordinal continuity, board heading/search state, dates and URL identity; stop after 30 distinct regular records or board end, with an absolute six-page ceiling. SE totals exclude pins. The shared `{ currentPage, pages, total, rows }` contract uses each source's own total semantics consistently across pages; newsletter total is null because the template supplies no count. Each row contains only validated id, pinned, ordinal, title, URL and date. `list.mjs` compares total/page count, validates cross-page date order, deduplicates and retains 30 metadata records. Sources with unknown structure, insufficient regular coverage or conflicting pages fail closed. A zero counter must not hide actual rows. Empty templates are explicit: EE's `no_list` cell says `등록된 데이터가 없습니다.`, SSE has an empty list body, ME replaces its table with `등록된 게시물이 없습니다.`, and SE may retain pins with zero regular rows. Unknown error rows are not successful empties; empty pages need no active pager. Search-result responses were used to inspect those shapes, but nonempty search parameters remain forbidden in collection.
+
+List-only scope is explicit: some new lists shorten titles without supplying a full-title field. Retain the available source text, never invent the rest or request article pages. Ignore summaries/bodies included in list responses. By explicit owner approval, `ee-employment` may recover an otherwise empty title only when the original anchor fragment is one unescaped opening-tag-shaped Korean title (`<HD현대삼호 온라인 채용설명회>` was observed). The narrow pattern allows letters/numbers/spaces and limited punctuation, requires Hangul in the tag-shaped name, and excludes nested tags, closing tags, attribute assignments and scripts. Preserve that literal as text; arbitrary malformed markup still fails. Rill renders it as escaped text.
+
+`test/engineering.test.mjs` covers observed sanitized skins, all 21 non-CMS board definitions, empty lists, identity, date/title/count boundaries, pin-saturated sampling, navigation parameters and the literal-title case. `test/html-fixture.mjs` supplies small synthetic lists for bootstrap/failure tests; it is not an alternate collector. Real fixtures omit scripts, summaries, images, authors and view counts. A missing recovery feed for any new source must leave all output unchanged.
 
 ### Main university API
 
@@ -70,7 +95,7 @@ The 15 IDs must agree with Rill's `src/notice-sources.ts`. Source order: Univers
 - `fetchedAt` is last successful source fetch, not newest publication date. `lastAttemptAt` records the completed attempt, must not precede success, and changes on recovery. Both are canonical UTC ISO timestamps with milliseconds, at most five minutes ahead. Dates are valid `YYYY-MM-DD`; titles are nonempty and at most 2000 characters; entries are unique safe HTTP(S) links without credentials, newest first, at most 30. Strip unknown fields from recovery output.
 - Each request has a 20-second timeout, a streamed 2 MiB body ceiling, expected JSON/HTML content type, no redirects/cookies/referrer, and cache revalidation. Collect two sources at a time, sequential pages per source. No blind retries or unbounded pagination.
 - On an explicitly classified source failure, request that board's previous envelope from `https://hiyabye.github.io/sogang-notices/feeds/<id>.json`, validate it, preserve notices and successful timestamp, and set error status/new attempt time. Never publish raw exceptions or response bodies; diagnostics belong in logs.
-- Missing, wrong-source, malformed, future-dated, or otherwise invalid required recovery stops the entire publication. Bootstrap therefore requires all 15 sources to succeed; never fabricate empty fallbacks. Healthy boards can publish with recovered failures only when every recovery is valid. Newly added boards have no recovery path until their first successful publication; a missing new-board recovery must preserve all previous output.
+- Missing, wrong-source, malformed, future-dated, or otherwise invalid required recovery stops the entire publication. Bootstrap therefore requires all 41 sources to succeed; never fabricate empty fallbacks. Healthy boards can publish with recovered failures only when every recovery is valid. Newly added boards have no recovery path until their first successful publication; a missing new-board recovery must preserve all previous output.
 - Validate all feeds before writing a staged directory. Write failures stop publication. Rename the previous local feeds directory aside, replace it with the complete stage, and restore the old directory on replacement failure. Clean staged paths; do not describe this as crash-proof or CDN-transactional publication. Output/cleanup/workflow-summary failures must produce a failed command, never continue to upload.
 - Emit source-specific recovered failures in `GITHUB_STEP_SUMMARY` even when publication is safe. GitHub Pages caching can return older valid recovery data despite revalidation; do not promise perfect last-version knowledge.
 - Old schema-1 clients/backups are intentionally unsupported by v0.4. Producer and consumer deploy independently; coordinate tests and live verification before separately authorized publication.
@@ -88,11 +113,11 @@ npm run collect   # Live metadata collection into ignored public/feeds/
 3. Run `npm test`. After parser/selection/TLS changes, perform one safe live collection and inspect all output. Investigate failed boards rather than blindly retrying.
 4. For contract changes, run Rill's `npm test` and `npm run build` too. Keep automated tests independent of deployed feeds and live Sogang.
 5. Verify sparse/pin-heavy/empty sources, truncated pages, metadata conflicts, schema/source/date/URL rejection, preserved timestamps, missing/invalid recovery, bootstrap, and output failures. Tests do not prove every possible filesystem crash or remote upload failure.
-6. Before an authorized publication, review the complete diff and staged files. After publication, verify all 15 URLs, JSON headers, CORS, timestamps, source IDs, and Firefox integration from local and deployed Rill. Local output and fixture interception do not prove deployment/CORS.
+6. Before an authorized publication, review the complete diff and staged files. After publication, verify all 41 URLs, JSON headers, CORS, timestamps, source IDs, and Firefox integration from local and deployed Rill. Local output and fixture interception do not prove deployment/CORS.
 
 ## TLS maintenance
 
-- Use `npm run collect`, not plain `node collect.mjs`, to apply the command-scoped intermediate. Never change system trust or disable certificate/hostname checks. The existing certificate also allowed the inspected CMS requests with normal verification.
+- Use `npm run collect`, not plain `node collect.mjs`, to apply the command-scoped two-intermediate bundle. Never change system trust or disable certificate/hostname checks. Preserve the original OV certificate bytes when maintaining the bundle; append only issuer certificates whose CA flags, fingerprints, signatures and validity have been verified against Node-trusted roots. `test/certificate.test.mjs` checks the exact two certificates and script path. GoGetSSL RSA DV SSL CA 2 (fingerprint recorded in README) repairs the missing issuer on `sse.sogang.ac.kr`; normal verified fetching succeeded after adding it. No source leaf, private key or new root is bundled.
 - The PEM is a public CA certificate, not a secret. README records provenance/fingerprint. If issuer changes or expiry approaches, inspect the chain, obtain the intermediate from the official issuer, verify against Node-trusted roots, and update tests/documentation together.
 - No runtime certificate download or insecure fallback. Remove the workaround only after plain Node fetch verifies the server-supplied chain.
 
@@ -101,7 +126,7 @@ npm run collect   # Live metadata collection into ignored public/feeds/
 - Public repository: `Hiyabye/sogang-notices`. Pages source is GitHub Actions, Node 24 on Ubuntu, `contents: read`, `pages: write`, `id-token: write`, `github-pages` environment, serialized runs.
 - Preserve `0 */6 * * *` UTC plus manual dispatch. Scheduled starts are 00:00/06:00/12:00/18:00 UTC (03:00/09:00/15:00/21:00 KST), not guaranteed completion times. Pushing does not itself trigger publication, but the next scheduled run uses default-branch code.
 - Tests, collection, recovery, and staging must all pass before upload/deployment. Any failure stops upload, retaining the previous published directory. Rill warns after 24 hours of source staleness; observed historical CDN lifetime is ten minutes.
-- Source reuse licensing remains unestablished. Earlier main-site robots guidance allowed crawling; current CMS responses contain malformed server-template text or unavailable HTML. The computing host returned 404 HTML at `/robots.txt` during this expansion. This is not reliable permission or a license. Limit collection to public list titles, dates, and links; recheck guidance before expansion.
+- Source reuse licensing remains unestablished. Earlier main-site robots guidance allowed crawling; current CMS responses contain malformed server-template text or unavailable HTML. The Computing and Engineering college hosts returned 404 HTML at `/robots.txt`. EE/SSE guidance disallows internal directories, not the selected `/kor/` lists; ME permits public pages but disallows `/api`, `/admin`, `/adm`; SE permits crawling. Only the approved public list paths are requested. This is not reliable permission or a license. Limit collection to public list titles, dates, and links; recheck guidance before expansion.
 
 ## Verification baseline
 

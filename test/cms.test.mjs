@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { readFile } from 'node:fs/promises'
-import { parseCmsPage, selectCmsNotices } from '../cms.mjs'
+import { parseCmsPage } from '../cms.mjs'
+import { selectNotices } from '../list.mjs'
 import { sources } from '../sources.mjs'
 import { collectSource } from '../collect.mjs'
 
@@ -10,7 +11,7 @@ const html = await readFile(new URL('./fixtures/cms-list.html', import.meta.url)
 const empty = await readFile(new URL('./fixtures/cms-empty.html', import.meta.url), 'utf8')
 
 test('CMS accepts the observed explicit empty structure without pagination, never a missing list', () => {
-  assert.deepEqual(selectCmsNotices([parseCmsPage(empty, source, 1)]), [])
+  assert.deepEqual(selectNotices([parseCmsPage(empty, source, 1)]), [])
   assert.throws(() => parseCmsPage(empty.replace('검색된 게시물이 없습니다.', ''), source, 1))
   assert.throws(() => parseCmsPage(empty, source, 2))
   assert.throws(() => parseCmsPage(empty.replace('name="searchValue" value=""', 'name="searchValue" value="unexpected filter"'), source, 1))
@@ -21,7 +22,7 @@ test('CMS list preserves full comment titles, pins, dates, and board-scoped iden
   assert.equal(page.pages, 1)
   assert.equal(page.rows.length, 7)
   assert.equal(page.rows.filter(row => row.pinned).length, 4)
-  const notices = selectCmsNotices([page])
+  const notices = selectNotices([page])
   assert.equal(notices.length, 7)
   assert.equal(notices[5].title, '낭종호 교수 연구팀, Computer Vision 분야 Premiere conference ‘WACV 2025’ 논문 채택')
   assert.equal(new URL(notices[5].url).searchParams.get('bbsConfigFK'), '7530')
@@ -47,7 +48,7 @@ for (const [id, count, regular, pages] of [
     const html = await readFile(new URL(`./fixtures/${id}.html`, import.meta.url), 'utf8')
     const page = parseCmsPage(html, source, 1)
     assert.equal(page.rows.length, count)
-    assert.equal(page.totalRegular, regular)
+    assert.equal(page.total, regular)
     assert.equal(page.pages, pages)
     if (id === 'computing-notices') {
       assert.equal(page.rows[0].title, '[공지] 2026년 상반기 - 제26회 TOPCIT 정기평가 접수 안내 (~9/7)')
@@ -93,8 +94,8 @@ test('15-row CMS collection requests only two pages and rejects a truncated or i
 
 test('CMS selection rejects incomplete sampling and conflicts, mixes pins, and limits to 30', () => {
   const page = parseCmsPage(html, source, 1)
-  assert.throws(() => selectCmsNotices([{ ...page, pages: 2 }]))
-  assert.throws(() => selectCmsNotices([{ ...page, rows: [...page.rows, { ...page.rows[0], title: 'Conflict' }] }]))
+  assert.throws(() => selectNotices([{ ...page, pages: 2 }]))
+  assert.throws(() => selectNotices([{ ...page, rows: [...page.rows, { ...page.rows[0], title: 'Conflict' }] }]))
   const rows = Array.from({ length: 40 }, (_, i) => ({ ...page.rows[0], id: 100 - i, url: `https://example.com/${i}`, pinned: false }))
-  assert.equal(selectCmsNotices([{ ...page, rows }]).length, 30)
+  assert.equal(selectNotices([{ ...page, rows }]).length, 30)
 })

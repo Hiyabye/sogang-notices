@@ -1,7 +1,11 @@
 import { mkdir, writeFile, rename, mkdtemp, rm, appendFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { sources, boardUrl, feedUrl } from './sources.mjs'
-import { parseCmsPage, selectCmsNotices } from './cms.mjs'
+import { parseCmsPage } from './cms.mjs'
+import { selectNotices } from './list.mjs'
+import { parseCommunityPage } from './community.mjs'
+import { parseMechanicalPage } from './mechanical.mjs'
+import { parseSemiconductorPage } from './semiconductor.mjs'
 import { validateFeed, SourceError } from './feed.mjs'
 import { pathToFileURL } from 'node:url'
 
@@ -103,15 +107,22 @@ async function request(url, type, fetcher) {
 }
 
 export async function collectSource(source, fetcher = fetch) {
-  if (!source.site) return buildFeed(await request(sourceUrl, 'application/json', fetcher))
+  if (source.id === 'sogang-academic') return buildFeed(await request(sourceUrl, 'application/json', fetcher))
+  const parsePage = source.kind === 'community' ? parseCommunityPage
+    : source.kind === 'mechanical' ? parseMechanicalPage
+      : source.kind === 'semiconductor' ? parseSemiconductorPage : parseCmsPage
   const pages = []
-  const samplePages = Math.ceil(noticeCount / (source.pageSize ?? 10))
+  // Pins consume slots in community/mechanical lists. Bound extra sampling,
+  // but stop as soon as 30 distinct regular records (or the board end) are covered.
+  const pinsConsumeSlots = source.kind === 'community' || source.kind === 'mechanical'
+  const samplePages = pinsConsumeSlots ? 6 : Math.ceil(noticeCount / (source.pageSize ?? 10))
   for (let page = 1; page <= samplePages; page++) {
     const html = await request(boardUrl(source, page), 'text/html', fetcher)
-    pages.push(parseCmsPage(html, source, page))
-    if (page === pages[0].pages) break
+    pages.push(parsePage(html, source, page))
+    const regular = new Set(pages.flatMap(page => page.rows.filter(row => !row.pinned).map(row => row.url)))
+    if (page === pages[0].pages || regular.size >= noticeCount) break
   }
-  const notices = selectCmsNotices(pages)
+  const notices = selectNotices(pages, pinsConsumeSlots)
   const fetchedAt = new Date().toISOString()
   return { schemaVersion: 2, sourceId: source.id, collectionStatus: 'ok', lastAttemptAt: fetchedAt, fetchedAt, notices }
 }

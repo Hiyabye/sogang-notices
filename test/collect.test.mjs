@@ -4,7 +4,8 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildFeed, collect, collectSource, sourceUrl } from '../collect.mjs'
-import { sources, feedUrl } from '../sources.mjs'
+import { sources, feedUrl, boardUrl } from '../sources.mjs'
+import { engineeringFixture } from './html-fixture.mjs'
 import { validateFeed } from '../feed.mjs'
 
 const fixture = JSON.parse(await readFile(new URL('./fixtures/board-list.json', import.meta.url), 'utf8'))
@@ -100,7 +101,7 @@ test('academic requests retain timeout, TLS-safe redirect policy, and JSON check
 const cms = await readFile(new URL('./fixtures/cms-list.html', import.meta.url), 'utf8')
 function cmsFixture(source) {
   let html = cms.replaceAll('7530', String(source.board)).replaceAll('aibased', source.site)
-  if (['ai-news', 'ai-careers', 'computing-notices'].includes(source.id)) {
+  if (['ai-news', 'ai-careers', 'computing-notices', 'eng-careers'].includes(source.id)) {
     // These templates put pinned titles directly in the anchor, without comments.
     html = html.replace(/(<strong>\[공지\] <\/strong>)\s*<!--[\s\S]*?-->/g, '$1')
   }
@@ -108,23 +109,29 @@ function cmsFixture(source) {
 }
 function healthy(url) {
   if (url === sourceUrl) return Response.json(fixture)
-  const source = sources.find(source => source.board === Number(new URL(url).searchParams.get('bbsConfigFK')))
+  const requested = new URL(url)
+  const source = sources.find(source => {
+    const expected = new URL(boardUrl(source))
+    return expected.origin === requested.origin && expected.pathname === requested.pathname &&
+      ['bbsConfigFK', 'siteId', 'board_id'].every(key => expected.searchParams.get(key) === requested.searchParams.get(key))
+  })
   assert.ok(source)
-  return new Response(cmsFixture(source), { headers: { 'Content-Type': 'text/html' } })
+  const html = source.kind || source.gallery ? engineeringFixture(source) : cmsFixture(source)
+  return new Response(html, { headers: { 'Content-Type': 'text/html' } })
 }
 
 test('all-board bootstrap, recovered failures, unsafe recovery and write failures preserve publication safety', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'sogang-notices-'))
   try {
     const feeds = await collect(directory, async url => healthy(url))
-    assert.equal(feeds.length, 15)
+    assert.equal(feeds.length, 41)
     for (const feed of feeds) assert.deepEqual(JSON.parse(await readFile(join(directory, 'feeds', `${feed.sourceId}.json`), 'utf8')), feed)
     const before = await readFile(join(directory, 'feeds', 'sogang-academic.json'), 'utf8')
-    for (const source of sources.filter(source => source.site === 'computing')) {
+    for (const source of sources.filter(source => source.site === 'computing' || ['ee-general', 'me-general', 'se-notices', 'eng-newsletter'].includes(source.id))) {
       const previous = feeds.find(feed => feed.sourceId === source.id)
       await assert.rejects(collect(directory, async url => {
         if (url === feedUrl(source)) return new Response('', { status: 404 })
-        if (new URL(url).searchParams.get('bbsConfigFK') === String(source.board)) return new Response('', { status: 503 })
+        if (url === boardUrl(source)) return new Response('', { status: 503 })
         return healthy(url)
       }))
       assert.deepEqual(JSON.parse(await readFile(join(directory, 'feeds', `${source.id}.json`), 'utf8')), previous)
