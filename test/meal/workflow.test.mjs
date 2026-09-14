@@ -44,6 +44,10 @@ test('one Pages publisher separates preparation, optional OCR, strict assembly a
     /needs\.prepare\.outputs\.needsOcr == 'false' && needs\.ocr\.result == 'skipped'/,
   )
   assert.match(jobs.deploy, /needs: assemble/)
+  assert.match(
+    jobs.deploy,
+    /if: \$\{\{ !cancelled\(\) && needs\.assemble\.result == 'success' \}\}/,
+  )
   assert.match(jobs.deploy, /pages: write\n      id-token: write/)
   assert.match(jobs.deploy, /name: github-pages/)
   assert.doesNotMatch(jobs.deploy, /checkout|setup-node|setup-python|run:/)

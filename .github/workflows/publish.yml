@@ -128,6 +128,8 @@ jobs:
 
   deploy:
     needs: assemble
+    # A legitimate OCR skip must not propagate through successful assembly.
+    if: ${{ !cancelled() && needs.assemble.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
