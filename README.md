@@ -18,11 +18,15 @@ CMS comments supply full titles where available. Some new source lists shorten t
 
 The main board uses public JSON. CMS, PHP community, Mechanical Engineering's server-rendered tables, and Semiconductor lists are parsed with parse5 without executing scripts. Collection samples 50 main-site records or enough source-specific pages to cover 30 regular records. Pins consume slots on some sites, so those sources allow at most six pages. Collection stops early at the board end. Counts, identities, ordering and pagination are validated; incomplete samples fail rather than publish a misleading list.
 
-A failed board retains validated previously published data with an error status. Healthy boards can still update. If any failed board has no valid recovery feed, publication stops for all boards. A clean bootstrap therefore requires all 41 sources to succeed. Newly added boards must succeed on their first publication because no recovery feed exists yet. A successful empty list is distinct from an unavailable source.
+An attempted board that fails retains validated previously published data with an error status. Boards outside the selected batch are carried forward without changing their notices, status or timestamps. Every deployment contains all 41 feeds, never just the refreshed batch. A successful empty list is distinct from an unavailable source.
+
+Rolling runs require a complete, valid published baseline. If any prior feed is missing, unavailable or invalid, the run stops before contacting Sogang and leaves the published site unchanged. It never silently falls back to a full crawl. An explicit full bootstrap/repair can rebuild the set; a failed board still needs valid published recovery data, so newly added boards must succeed on their first publication.
 
 ## Update times and freshness
 
-Updates are scheduled for **00:00, 06:00, 12:00, and 18:00 UTC**, or **03:00, 09:00, 15:00, and 21:00 Korea Standard Time**. Manual runs are also available.
+Updates are scheduled **hourly at minute 17** (`17 * * * *`, UTC). Each run refreshes one of six stable batches, balanced at roughly 17-18 expected university list requests per batch rather than equal board counts. With normal hourly execution, each board is attempted about every six hours. Manual rolling and full-refresh runs are also available.
+
+The least-recently attempted batch runs next, using the existing published attempt timestamps rather than the wall-clock hour. Missed runs therefore do not permanently skip a batch, and recovery resumes one batch at a time without a catch-up request spike. Failed attempts also advance that batch's turn so an unavailable board cannot starve the others. Successful freshness is not guaranteed during source or workflow outages; console output and the run summary flag feeds without a successful fetch in 24 hours.
 
 These are scheduled start times, not guaranteed completion times. [GitHub Actions can delay or drop scheduled runs during high load](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule), particularly at the start of an hour, and can disable inactive public-repository schedules.
 
@@ -37,11 +41,13 @@ Use Node 22.18+ on the 22.x line, or Node 24+, with npm. The collection command 
 ```sh
 npm ci
 npm test
-npm run collect
+npm run collect                      # One rolling batch, using published prior feeds
+npm run collect -- --mode=full        # Explicit full bootstrap/repair
 ```
 
 - `npm test` is offline and does not deploy or contact Sogang.
-- `npm run collect` fetches public lists, two boards at a time, with 20-second per-request timeouts and bounded response sizes. It stages 41 JSON files under `public/feeds/` after collection/recovery validation succeeds.
+- `npm run collect` first downloads and validates all prior feeds from GitHub Pages, then refreshes only the oldest batch. GitHub reads do not contact the university. At most two boards are collected at once; university request starts are globally spaced by at least one second, even across hostnames. Both modes retain 20-second request timeouts, byte limits and bounded pagination.
+- Both modes stage the complete 41-file set under `public/feeds/` only after validation succeeds. Carried feeds keep their original timestamps and error status. A local full run does not initialize the published baseline: its output must be published before rolling runs can use it.
 - Local collection does **not** publish anything or change the feed Rill uses. The generated `public/` directory is intentionally ignored by Git.
 
 For architecture, source-field assumptions, testing requirements, and changes coordinated with Rill, see [AGENTS.md](AGENTS.md).
@@ -71,11 +77,11 @@ Verified schema-2 response headers are `Content-Type: application/json; charset=
 
 ## Publish or inspect an update
 
-Publish new collector paths before publishing the matching Rill catalog: clients cannot load unpublished feeds. The college additions retain feed schema 2 and all existing IDs. Older Rill versions do not recognize the new subscription IDs, so use an updated version when transferring backups containing them. A clean bootstrap needs all 41 successful collections; existing boards may recover from valid prior feeds.
+Publish new collector paths before publishing the matching Rill catalog: clients cannot load unpublished feeds. The college additions retain feed schema 2 and all existing IDs. Older Rill versions do not recognize the new subscription IDs, so use an updated version when transferring backups containing them. Use explicit full mode for first publication or after adding boards. A clean bootstrap needs all 41 successful collections; existing boards may recover from valid prior feeds.
 
 Pages uses **Settings > Pages > Build and deployment > Source > GitHub Actions**. The **Publish Sogang notices** workflow tests, collects, and deploys only the validated `public/` output using GitHub's official Pages actions.
 
-To publish immediately, open the workflow's **Run workflow** menu and select `main`. This performs a real source fetch and deployment. Inspect all steps, then check the live feed's `fetchedAt`. Failed tests, unrecoverable source failures, invalid output, or write failures stop publication. Recovered failures appear in the workflow summary even when publication succeeds.
+To publish immediately, open the workflow's **Run workflow** menu and select `main`. Choose **rolling** for one batch, or **full** for an intentional bootstrap/repair that contacts every board. The scheduled path always uses rolling mode. This performs a real source fetch and deployment. Inspect all steps, then check the live feed's `fetchedAt`. Failed tests, unrecoverable source failures, invalid output, or write failures stop publication. Recovered failures appear in the workflow summary even when publication succeeds.
 
 Pushing a commit does not immediately publish a feed. The next scheduled run uses the latest code on the default branch, or you can run the workflow manually. Schedule changes take effect only after the workflow change is pushed to that branch. Deploying this repository does not deploy Rill.
 
@@ -109,7 +115,8 @@ Tests verify both fingerprints, CA flags, signatures, validity periods, and the 
 | --- | --- |
 | Certificate verification fails | Use `npm run collect`, not plain `node collect.mjs`. If it still fails, inspect the source chain and follow the certificate maintenance instructions in AGENTS.md. |
 | Unexpected response, ordering error, or too few regular notices | The source may have changed or pins may have crowded the first page. Inspect a fresh public response and update the collector with a regression test; do not bypass validation. |
-| Feed time is old | Check Actions history for a failed, delayed, or disabled workflow. Old publication is deliberately preserved on collection failure. |
+| Feed time is old | Check Actions history and the stale-feed summary. Rolling runs resume the oldest attempted batch first, but cannot guarantee freshness during outages. Carried feeds correctly retain their old timestamps. |
+| Rolling collection needs a valid published feed | Check GitHub Pages availability and the named feed first. For a genuinely missing/new or damaged baseline, explicitly run and publish full mode. Do not use a full crawl to hide a transient GitHub outage. |
 | Local collection succeeds but the website is unchanged | Local output is not uploaded automatically. Check the deployment run, allow for the CDN cache, and reload Rill. |
 | Rill reports unavailable but the feed opens directly | Inspect the browser's Network panel for the feed response, CORS, and JSON validation errors. A successful terminal request alone does not prove browser access. |
 

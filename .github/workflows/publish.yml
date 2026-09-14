@@ -2,8 +2,17 @@ name: Publish Sogang notices
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Rolling batch, or full bootstrap/repair (contacts every board)'
+        type: choice
+        required: true
+        default: rolling
+        options:
+          - rolling
+          - full
 
 permissions:
   contents: read
@@ -33,7 +42,9 @@ jobs:
       - name: Test
         run: npm test
       - name: Collect validated notices
-        run: npm run collect
+        env:
+          COLLECTION_MODE: ${{ inputs.mode || 'rolling' }}
+        run: npm run collect -- "--mode=$COLLECTION_MODE"
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - name: Upload feed

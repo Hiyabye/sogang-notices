@@ -8,6 +8,8 @@ import { parseMechanicalPage } from './mechanical.mjs'
 import { parseSemiconductorPage } from './semiconductor.mjs'
 import { validateFeed, SourceError } from './feed.mjs'
 import { pathToFileURL } from 'node:url'
+import { batches, validateBatches, selectBatch } from './batches.mjs'
+import { paceRequests } from './pacing.mjs'
 
 export const sourceUrl = 'https://www.sogang.ac.kr/api/api/v1/mainKo/BbsData/boardList?pageNum=1&pageSize=50&bbsConfigFk=2&category=&introPkId=&title=&content=&username='
 const noticeCount = 30
@@ -127,25 +129,50 @@ export async function collectSource(source, fetcher = fetch) {
   return { schemaVersion: 2, sourceId: source.id, collectionStatus: 'ok', lastAttemptAt: fetchedAt, fetchedAt, notices }
 }
 
-export async function collect(outputDirectory = 'public', fetcher = fetch) {
-  const feeds = []
-  // Two sources at a time, with sequential pagination within each board.
-  for (let offset = 0; offset < sources.length; offset += 2) {
-    const batch = await Promise.all(sources.slice(offset, offset + 2).map(async source => {
+export async function collect(outputDirectory = 'public', fetcher = fetch, { mode = 'rolling', spacingMs = 1000, summaryFile = process.env.GITHUB_STEP_SUMMARY } = {}) {
+  if (!['rolling', 'full'].includes(mode)) throw new Error('Collection mode must be rolling or full.')
+  validateBatches()
+  const sourceFetcher = paceRequests(fetcher, spacingMs)
+  const previous = new Map()
+  let batchIndex = null
+  if (mode === 'rolling') {
+    // Complete validation precedes every university request. A broken baseline
+    // must not turn a normal hourly run into an unexpected full crawl.
+    for (let offset = 0; offset < sources.length; offset += 2) {
+      const loaded = await Promise.all(sources.slice(offset, offset + 2).map(async source => {
+        try {
+          return validateFeed(await request(feedUrl(source), 'application/json', fetcher), source)
+        } catch (cause) {
+          throw new Error(`Rolling collection needs a valid published feed for ${source.id}. Check availability; use --mode=full only for intentional bootstrap or repair.`, { cause })
+        }
+      }))
+      for (const feed of loaded) previous.set(feed.sourceId, feed)
+    }
+    batchIndex = selectBatch(previous)
+  }
+  const selectedIds = batchIndex === null ? new Set(sources.map(source => source.id)) : new Set(batches[batchIndex].map(([id]) => id))
+  const selected = sources.filter(source => selectedIds.has(source.id))
+  const next = new Map(previous)
+  const failed = new Set()
+  // Two boards at a time; request starts share one global university pacing gate.
+  for (let offset = 0; offset < selected.length; offset += 2) {
+    const refreshed = await Promise.all(selected.slice(offset, offset + 2).map(async source => {
       let feed
       try {
-        feed = await collectSource(source, fetcher)
+        feed = await collectSource(source, sourceFetcher)
       } catch (error) {
         // Programming faults must not masquerade as a recoverable source outage.
         if (!(error instanceof SourceError)) throw error
         console.error(`${source.id}: ${error.message}`)
-        const previous = validateFeed(await request(feedUrl(source), 'application/json', fetcher), source)
-        feed = { ...previous, collectionStatus: 'error', lastAttemptAt: new Date().toISOString() }
+        const retained = previous.get(source.id) ?? validateFeed(await request(feedUrl(source), 'application/json', fetcher), source)
+        feed = { ...retained, collectionStatus: 'error', lastAttemptAt: new Date().toISOString() }
+        failed.add(source.id)
       }
       return validateFeed(feed, source)
     }))
-    feeds.push(...batch)
+    for (const feed of refreshed) next.set(feed.sourceId, feed)
   }
+  const feeds = sources.map(source => validateFeed(next.get(source.id), source))
   // All recovery and final validation must succeed before replacing any output.
   await mkdir(outputDirectory, { recursive: true })
   const stage = await mkdtemp(join(outputDirectory, '.feeds-'))
@@ -163,17 +190,29 @@ export async function collect(outputDirectory = 'public', fetcher = fetch) {
   } finally {
     await rm(stage, { recursive: true, force: true })
   }
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    await appendFile(process.env.GITHUB_STEP_SUMMARY, feeds.map(feed =>
-      `- ${feed.sourceId}: ${feed.collectionStatus === 'ok' ? 'collected' : 'FAILED, retained last good data'} (${feed.fetchedAt})`).join('\n') + '\n')
+  const stale = feeds.filter(feed => Date.now() - Date.parse(feed.fetchedAt) >= 24 * 60 * 60 * 1000)
+  const heading = batchIndex === null ? 'Full bootstrap/repair' : `Batch ${batchIndex + 1}/6 (about ${batches[batchIndex].reduce((sum, [, cost]) => sum + cost, 0)} university requests)`
+  console.log(`${heading}: ${selected.length} attempted, ${failed.size} recovered failures, ${sources.length - selected.length} carried forward.`)
+  if (stale.length) console.warn(`STALE: ${stale.length} feeds have no successful fetch within 24 hours: ${stale.map(feed => feed.sourceId).join(', ')}`)
+  if (summaryFile) {
+    const lines = feeds.map(feed => {
+      const status = failed.has(feed.sourceId) ? 'FAILED, retained last good data'
+        : selectedIds.has(feed.sourceId) ? 'collected'
+          : feed.collectionStatus === 'error' ? 'carried (previous attempt failed)' : 'carried unchanged'
+      return `- ${feed.sourceId}: ${status} (last success ${feed.fetchedAt}; last attempt ${feed.lastAttemptAt})`
+    })
+    await appendFile(summaryFile, `## ${heading}\n\n${stale.length} feeds without a successful fetch within 24 hours.\n\n${lines.join('\n')}\n`)
   }
   return feeds
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    const feeds = await collect()
-    console.log(`Prepared ${feeds.length} board feeds (${feeds.filter(feed => feed.collectionStatus === 'error').length} recovered failures).`)
+    const args = process.argv.slice(2)
+    if (args.length > 1 || (args.length && !['--mode=rolling', '--mode=full'].includes(args[0]))) throw new Error('Usage: npm run collect -- [--mode=rolling|--mode=full]')
+    const mode = args[0]?.slice('--mode='.length) ?? 'rolling'
+    const feeds = await collect('public', fetch, { mode })
+    console.log(`Prepared the complete set of ${feeds.length} board feeds.`)
   } catch (error) {
     console.error(`Collection failed: ${error.message}${error.cause ? ` (${error.cause.message})` : ''}`)
     process.exitCode = 1
