@@ -22,6 +22,7 @@ import {
   maxMealBytes,
 } from './schema.mjs'
 import { discoverMeals, requestBytes, MealSourceError } from './bellarmine.mjs'
+import reviews from './reviewed.json' with { type: 'json' }
 
 const root = new URL('../', import.meta.url)
 const errorCodes = ['source', 'date-mismatch', 'layout', 'ocr-quality']
@@ -35,6 +36,7 @@ export async function pipelineId() {
     'meal/schema.mjs',
     'meal/bellarmine.mjs',
     'meal/publish.mjs',
+    'meal/reviewed.json',
   ]) {
     hash
       .update(name)
@@ -47,6 +49,42 @@ export async function pipelineId() {
   }
   return hash.digest('hex')
 }
+// Both preparation and assembly derive no-OCR results from trusted local review
+// data or a validated baseline. The artifact itself cannot grant an exception.
+function reusableWeek(candidate, baseline, id, verifiedAt, now = Date.now()) {
+  const reviewed = reviews.filter(
+    (entry) => entry.source.imageSha256 === candidate.source.imageSha256,
+  )
+  if (reviewed.length > 1) throw new Error('Ambiguous reviewed image.')
+  if (reviewed.length) {
+    const review = reviewed[0]
+    // A known reviewed image must never fall through to ordinary cache reuse
+    // when its post, title, URL or period no longer matches the reviewed source.
+    if (
+      candidate.weekStart !== review.weekStart ||
+      candidate.weekEnd !== review.weekEnd ||
+      Object.entries(review.source).some(
+        ([key, value]) => candidate.source[key] !== value,
+      )
+    )
+      return null
+    return parseMealWeek(
+      { ...review, pipelineId: id, extractedAt: review.reviewedAt, verifiedAt },
+      now,
+    )
+  }
+  const old = baseline?.weeks.find(
+    (week) =>
+      week.source.imageSha256 === candidate.source.imageSha256 &&
+      week.pipelineId === id &&
+      week.weekStart === candidate.weekStart &&
+      week.weekEnd === candidate.weekEnd,
+  )
+  return old
+    ? parseMealWeek({ ...old, source: candidate.source, verifiedAt }, now)
+    : null
+}
+
 export function recoverMeals(baseline, code, attemptedAt) {
   if (!errorCodes.includes(code))
     throw new Error('Unknown meal failure category.')
@@ -146,22 +184,14 @@ export async function prepare(
   const lastAttemptAt = new Date().toISOString()
   const inputs = []
   for (const candidate of candidates) {
-    const reusable = baseline?.weeks.find(
-      (week) =>
-        week.source.imageSha256 === candidate.source.imageSha256 &&
-        week.pipelineId === id &&
-        week.weekStart === candidate.weekStart &&
-        week.weekEnd === candidate.weekEnd,
-    )
+    const reusable = reusableWeek(candidate, baseline, id, lastAttemptAt)
     const { bytes, ...metadata } = candidate
     const image = `${candidate.source.postId}.image`
     if (!reusable) await writeFile(join(work, image), bytes)
     inputs.push({
       ...metadata,
       image,
-      reused: reusable
-        ? { ...reusable, source: candidate.source, verifiedAt: lastAttemptAt }
-        : null,
+      reused: reusable,
     })
   }
   const manifest = {
@@ -211,28 +241,15 @@ export function assembleMeals(manifest, results, id, now = Date.now()) {
     )
       throw new Error('Invalid prepared image identity.')
     if (candidate.reused) {
-      const old = baseline?.weeks.find(
-        (week) =>
-          week.source.imageSha256 === candidate.source.imageSha256 &&
-          week.pipelineId === id &&
-          week.weekStart === candidate.weekStart &&
-          week.weekEnd === candidate.weekEnd,
+      const expected = reusableWeek(
+        candidate,
+        baseline,
+        id,
+        manifest.lastAttemptAt,
+        now,
       )
       const reused = parseMealWeek(candidate.reused, now)
-      if (
-        !old ||
-        JSON.stringify(reused) !==
-          JSON.stringify(
-            parseMealWeek(
-              {
-                ...old,
-                source: candidate.source,
-                verifiedAt: manifest.lastAttemptAt,
-              },
-              now,
-            ),
-          )
-      )
+      if (!expected || JSON.stringify(reused) !== JSON.stringify(expected))
         throw new Error('Invalid reused OCR result.')
       weeks.push(reused)
       continue

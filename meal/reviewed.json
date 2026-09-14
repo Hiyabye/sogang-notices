@@ -1,0 +1,371 @@
+[
+  {
+    "weekStart": "2026-09-14",
+    "weekEnd": "2026-09-20",
+    "reviewedAt": "2026-09-14T12:05:07.480Z",
+    "reviewNote": "Owner-approved full-week transcription checked against the original pixels. The post title, table year and all seven date/weekday columns agree on September 14-20; the banner incorrectly repeats September 7-13. Preserve source spelling, including 못난이감자츠지빵. Omit calories, decorative bakery captions, the promotional slogan, logos and personal/contact information, but retain the dish name 놀부부대찌개 inside the graphic. Copy shared breakfast items only to listed breakfasts and the shared drink only to operating dinners.",
+    "source": {
+      "postId": "940528",
+      "title": "9월 14일 ~ 9월 20일 식단",
+      "postUrl": "https://scc.sogang.ac.kr/front/cmsboardview.do?bbsConfigFK=1185&siteId=dormitory&pkid=940528",
+      "imageUrl": "https://scc.sogang.ac.kr/dataview/board/1185/20260908_1630_4210001.jpg",
+      "imageSha256": "31a745b1e1e63efb0dbfe491313ed163738f3c9021bee4d4cdad3dcc74cb8da0"
+    },
+    "days": [
+      {
+        "date": "2026-09-14",
+        "breakfast": {
+          "korean": {
+            "status": "available",
+            "items": [
+              "참치두부김치찌개",
+              "쌀밥",
+              "떡갈비조림",
+              "메추리알조림",
+              "도시락김구이",
+              "열무김치",
+              "바나나/우유"
+            ],
+            "serviceTime": null
+          },
+          "western": {
+            "status": "available",
+            "items": [
+              "이천쌀크림빵",
+              "미니돈까스*케찹",
+              "바나나",
+              "씨리얼 2종/우유",
+              "요거트"
+            ],
+            "serviceTime": null
+          },
+          "common": {
+            "status": "available",
+            "items": ["그린샐러드 & 드레싱 & 셀프계란후라이"],
+            "serviceTime": null
+          }
+        },
+        "cupRice": { "status": "unlisted", "items": [], "serviceTime": null },
+        "dinner": {
+          "status": "available",
+          "items": [
+            "소고기볶음밥",
+            "맑은우동국물",
+            "스프링롤&스윗칠리소스",
+            "단무지",
+            "열무김치",
+            "마카로니샐러드"
+          ],
+          "serviceTime": null
+        },
+        "drink": {
+          "status": "available",
+          "items": ["디톡스워터"],
+          "serviceTime": null
+        }
+      },
+      {
+        "date": "2026-09-15",
+        "breakfast": {
+          "korean": {
+            "status": "available",
+            "items": [
+              "흑미건강닭죽",
+              "동치미",
+              "제육깐풍강정",
+              "양념깻잎지",
+              "오그락지무침",
+              "파인애플",
+              "우유"
+            ],
+            "serviceTime": null
+          },
+          "western": {
+            "status": "available",
+            "items": [
+              "호두바게트&버터",
+              "코울슬로",
+              "파인애플",
+              "씨리얼 2종/우유",
+              "요거트"
+            ],
+            "serviceTime": null
+          },
+          "common": {
+            "status": "available",
+            "items": ["그린샐러드 & 드레싱 & 셀프계란후라이"],
+            "serviceTime": null
+          }
+        },
+        "cupRice": {
+          "status": "available",
+          "items": ["새우까스덮밥&타르타르"],
+          "serviceTime": "11:40"
+        },
+        "dinner": {
+          "status": "available",
+          "items": [
+            "제육김치볶음",
+            "쌀밥",
+            "시금치국",
+            "동그랑땡전",
+            "고추지무침",
+            "깍두기"
+          ],
+          "serviceTime": null
+        },
+        "drink": {
+          "status": "available",
+          "items": ["디톡스워터"],
+          "serviceTime": null
+        }
+      },
+      {
+        "date": "2026-09-16",
+        "breakfast": {
+          "korean": {
+            "status": "available",
+            "items": [
+              "고추장불고기",
+              "잡곡밥",
+              "맑은콩나물국",
+              "미역초무침",
+              "땅콩조림",
+              "배추김치",
+              "만다린/우유"
+            ],
+            "serviceTime": null
+          },
+          "western": {
+            "status": "available",
+            "items": [
+              "갈릭스윗치즈피자",
+              "해쉬브라운",
+              "만다린",
+              "씨리얼 2종/우유",
+              "콜라"
+            ],
+            "serviceTime": null
+          },
+          "common": {
+            "status": "available",
+            "items": ["그린샐러드 & 드레싱 & 셀프계란후라이"],
+            "serviceTime": null
+          }
+        },
+        "cupRice": { "status": "unlisted", "items": [], "serviceTime": null },
+        "dinner": {
+          "status": "available",
+          "items": [
+            "치즈 치킨까스&",
+            "데미그라소스",
+            "크림스프/쌀밥",
+            "쫄면무침",
+            "오이피클",
+            "배추김치",
+            "그린샐러드"
+          ],
+          "serviceTime": null
+        },
+        "drink": {
+          "status": "available",
+          "items": ["디톡스워터"],
+          "serviceTime": null
+        }
+      },
+      {
+        "date": "2026-09-17",
+        "breakfast": {
+          "korean": {
+            "status": "available",
+            "items": [
+              "사골우거지국",
+              "쌀밥",
+              "두부조림",
+              "느타리야채볶음",
+              "연근조림",
+              "배추김치",
+              "방울토마토/우유"
+            ],
+            "serviceTime": null
+          },
+          "western": {
+            "status": "available",
+            "items": [
+              "못난이감자츠지빵",
+              "유부초밥",
+              "방울토마토",
+              "씨리얼 2종/우유",
+              "요거트"
+            ],
+            "serviceTime": null
+          },
+          "common": {
+            "status": "available",
+            "items": ["그린샐러드 & 드레싱 & 셀프계란후라이"],
+            "serviceTime": null
+          }
+        },
+        "cupRice": { "status": "unlisted", "items": [], "serviceTime": null },
+        "dinner": {
+          "status": "available",
+          "items": [
+            "충무식오징어무침",
+            "쌀밥",
+            "청국장찌개",
+            "후랑크야채볶음",
+            "멸치조림",
+            "배추김치"
+          ],
+          "serviceTime": null
+        },
+        "drink": {
+          "status": "available",
+          "items": ["디톡스워터"],
+          "serviceTime": null
+        }
+      },
+      {
+        "date": "2026-09-18",
+        "breakfast": {
+          "korean": {
+            "status": "available",
+            "items": [
+              "가자미구이",
+              "잡곡밥",
+              "미역국",
+              "한식잡채",
+              "마늘쫑무침",
+              "깍두기",
+              "후르츠과일/우유"
+            ],
+            "serviceTime": null
+          },
+          "western": {
+            "status": "available",
+            "items": [
+              "유자파이",
+              "바질페스토푸실리",
+              "후르츠과일",
+              "씨리얼 2종/우유",
+              "요거트"
+            ],
+            "serviceTime": null
+          },
+          "common": {
+            "status": "available",
+            "items": ["그린샐러드 & 드레싱 & 셀프계란후라이"],
+            "serviceTime": null
+          }
+        },
+        "cupRice": { "status": "unlisted", "items": [], "serviceTime": null },
+        "dinner": {
+          "status": "available",
+          "items": [
+            "놀부부대찌개",
+            "쌀밥",
+            "언양식불고기&오리엔탈파채",
+            "연두부&양념장",
+            "고들빼기무침",
+            "깍두기"
+          ],
+          "serviceTime": null
+        },
+        "drink": {
+          "status": "available",
+          "items": ["디톡스워터"],
+          "serviceTime": null
+        }
+      },
+      {
+        "date": "2026-09-19",
+        "breakfast": {
+          "korean": {
+            "status": "available",
+            "items": [
+              "닭곰탕&당면사리",
+              "쌀밥",
+              "해물파전",
+              "올방개묵김가루무침",
+              "명엽채볶음",
+              "배추김치",
+              "황도/우유"
+            ],
+            "serviceTime": null
+          },
+          "western": {
+            "status": "available",
+            "items": [
+              "토스트빵&버터&딸기잼",
+              "슬라이스햄/슬라이스치즈",
+              "황도",
+              "씨리얼 2종/우유",
+              "요거트"
+            ],
+            "serviceTime": null
+          },
+          "common": {
+            "status": "available",
+            "items": ["그린샐러드 & 드레싱 & 셀프계란후라이"],
+            "serviceTime": null
+          }
+        },
+        "cupRice": { "status": "unlisted", "items": [], "serviceTime": null },
+        "dinner": { "status": "closed", "items": [], "serviceTime": null },
+        "drink": { "status": "unlisted", "items": [], "serviceTime": null }
+      },
+      {
+        "date": "2026-09-20",
+        "breakfast": {
+          "korean": {
+            "status": "available",
+            "items": [
+              "소고기두부탕국",
+              "잡곡밥",
+              "메밀전병",
+              "비엔나케찹볶음",
+              "갓절임",
+              "배추김치",
+              "패션후르츠/우유"
+            ],
+            "serviceTime": null
+          },
+          "western": {
+            "status": "available",
+            "items": [
+              "단팥빵",
+              "매쉬드포테이토",
+              "패션후르츠",
+              "씨리얼 2종/우유",
+              "요거트"
+            ],
+            "serviceTime": null
+          },
+          "common": {
+            "status": "available",
+            "items": ["그린샐러드 & 드레싱 & 셀프계란후라이"],
+            "serviceTime": null
+          }
+        },
+        "cupRice": { "status": "unlisted", "items": [], "serviceTime": null },
+        "dinner": {
+          "status": "available",
+          "items": [
+            "전주비빔밥&후라이",
+            "얼갈이된장국",
+            "미트볼떡조림",
+            "오복채무침",
+            "배추김치",
+            "베이비슈"
+          ],
+          "serviceTime": null
+        },
+        "drink": {
+          "status": "available",
+          "items": ["디톡스워터"],
+          "serviceTime": null
+        }
+      }
+    ]
+  }
+]
