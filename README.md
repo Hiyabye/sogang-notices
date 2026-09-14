@@ -1,19 +1,20 @@
 # Sogang notices
 
-A small collector for 13 public Sogang University notice boards, used by [Rill](https://hiyabye.github.io/Rill/): undergraduate academic notices and selected Computer Science, AI, and AI-Based Liberal Studies boards.
+A small collector for 15 public Sogang University notice boards, used by [Rill](https://hiyabye.github.io/Rill/): undergraduate academic notices, College of Computing announcements/news, and selected Computer Science, AI, and AI-Based Liberal Studies boards.
 
-- **Source board:** https://www.sogang.ac.kr/ko/academic-support/notices
+- **University source board:** https://www.sogang.ac.kr/ko/academic-support/notices
+- **College site:** https://computing.sogang.ac.kr/computing/index.html (공지사항 and SW융합대학 News; not Dean's List)
 - **Feed addresses:** `https://hiyabye.github.io/sogang-notices/feeds/<source-id>.json`
-- **Board IDs and URLs:** see `sources.mjs` and [AGENTS.md](AGENTS.md). The schema-2 feeds are published; local collection does not update them.
+- **Board IDs and URLs:** see `sources.mjs` and [AGENTS.md](AGENTS.md). Published feeds may lag this catalog; new paths require a successful deployment. Local collection does not update them.
 - **Workflow and run history:** https://github.com/Hiyabye/sogang-notices/actions/workflows/publish.yml
 
 ## What the feed contains
 
 Each board feed contains up to 30 recent notices with full titles, publication dates, and source links. Pins and regular notices are ordered by source date, not pin position. No article bodies, attachments, authors, or login data are collected.
 
-The main board uses public JSON; departments use HTML list metadata parsed with parse5, without executing source scripts. Collection samples 50 main-site records or up to three department pages. Incomplete or inconsistent samples fail rather than publish a misleading list.
+The main board uses public JSON; college and department boards use HTML list metadata parsed with parse5, without executing source scripts. Collection samples 50 main-site records, up to three ten-row department pages, or two fifteen-row college pages, plus pinned notices. Incomplete or inconsistent samples fail rather than publish a misleading list.
 
-A failed board retains validated previously published data with an error status. Healthy boards can still update. If any failed board has no valid recovery feed, publication stops for all boards. The first schema-2 publication therefore requires all 13 sources to succeed. A successful empty list is distinct from an unavailable source.
+A failed board retains validated previously published data with an error status. Healthy boards can still update. If any failed board has no valid recovery feed, publication stops for all boards. A clean bootstrap therefore requires all 15 sources to succeed. Newly added boards must succeed on their first publication because no recovery feed exists yet. A successful empty list is distinct from an unavailable source.
 
 ## Update times and freshness
 
@@ -23,7 +24,7 @@ These are scheduled start times, not guaranteed completion times. [GitHub Action
 
 `fetchedAt` records the last successful source fetch. `lastAttemptAt` records the completed attempt; `collectionStatus: "error"` means retained data is being served after a source failure. Recovery never makes old data appear newly fetched.
 
-Published feeds have a ten-minute cache lifetime. Rill v0.4 checks subscribed feeds hourly while visible and holds changed content behind **Updates available**. It warns when displayed source data is more than 24 hours old. Always consult university boards for authoritative information.
+Published feeds were observed with a ten-minute cache lifetime. Rill checks subscribed feeds hourly while visible and holds changed content behind **새 공지 반영**. It warns when displayed source data is more than 24 hours old. Always consult university boards for authoritative information.
 
 ## Run locally
 
@@ -36,7 +37,7 @@ npm run collect
 ```
 
 - `npm test` is offline and does not deploy or contact Sogang.
-- `npm run collect` fetches public lists, two boards at a time, with 20-second per-request timeouts and bounded response sizes. It stages 13 JSON files under `public/feeds/` after collection/recovery validation succeeds.
+- `npm run collect` fetches public lists, two boards at a time, with 20-second per-request timeouts and bounded response sizes. It stages 15 JSON files under `public/feeds/` after collection/recovery validation succeeds.
 - Local collection does **not** publish anything or change the feed Rill uses. The generated `public/` directory is intentionally ignored by Git.
 
 For architecture, source-field assumptions, testing requirements, and changes coordinated with Rill, see [AGENTS.md](AGENTS.md).
@@ -66,7 +67,7 @@ Verified schema-2 response headers are `Content-Type: application/json; charset=
 
 ## Publish or inspect an update
 
-Coordinate the schema-2 collector and Rill v0.4 before publication. Old clients do not understand subscription feeds; new clients cannot load unpublished paths. No compatibility layer is included. The first publication needs all 13 successful source collections.
+Publish new collector paths before publishing the matching Rill catalog: clients cannot load unpublished feeds. The college additions retain feed schema 2 and all existing IDs. Older Rill versions do not recognize the new subscription IDs, so use an updated version when transferring backups containing them. A clean bootstrap needs all 15 successful collections; existing boards may recover from valid prior feeds.
 
 Pages uses **Settings > Pages > Build and deployment > Source > GitHub Actions**. The **Publish Sogang notices** workflow tests, collects, and deploys only the validated `public/` output using GitHub's official Pages actions.
 
@@ -102,6 +103,6 @@ The intermediate and source leaf were verified against Node's trusted roots befo
 
 ## Source guidance and limitations
 
-On September 8, 2026, live `robots.txt` allowed crawling. The board footer carried a general copyright statement but no linked notice-specific usage terms; an explicit reuse license was not established. Robots guidance is not a content license. Publication stays limited to public titles, dates, and links, at most 30 per board. Department robots responses contained malformed server-template text or unavailable HTML, so current crawling guidance could not be reliably confirmed.
+On September 8, 2026, live `robots.txt` allowed crawling. The board footer carried a general copyright statement but no linked notice-specific usage terms; an explicit reuse license was not established. Robots guidance is not a content license. Publication stays limited to public titles, dates, and links, at most 30 per board. Department robots responses contained malformed server-template text or unavailable HTML. The College of Computing host returned a 404 HTML page for robots.txt during expansion, so current crawling guidance could not be reliably confirmed.
 
 All 13 schema-2 feeds were published and verified from local and deployed Rill in Firefox on September 9, 2026, with TLS verification enabled. Source availability, response structure, reuse permission, CDN freshness, and exact scheduling remain limitations. Development details are in AGENTS.md.

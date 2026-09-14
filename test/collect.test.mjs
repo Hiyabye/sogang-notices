@@ -100,8 +100,8 @@ test('academic requests retain timeout, TLS-safe redirect policy, and JSON check
 const cms = await readFile(new URL('./fixtures/cms-list.html', import.meta.url), 'utf8')
 function cmsFixture(source) {
   let html = cms.replaceAll('7530', String(source.board)).replaceAll('aibased', source.site)
-  if (['ai-news', 'ai-careers'].includes(source.id)) {
-    // These two templates put pinned titles directly in the anchor, without comments.
+  if (['ai-news', 'ai-careers', 'computing-notices'].includes(source.id)) {
+    // These templates put pinned titles directly in the anchor, without comments.
     html = html.replace(/(<strong>\[공지\] <\/strong>)\s*<!--[\s\S]*?-->/g, '$1')
   }
   return html
@@ -117,9 +117,19 @@ test('all-board bootstrap, recovered failures, unsafe recovery and write failure
   const directory = await mkdtemp(join(tmpdir(), 'sogang-notices-'))
   try {
     const feeds = await collect(directory, async url => healthy(url))
-    assert.equal(feeds.length, 13)
+    assert.equal(feeds.length, 15)
     for (const feed of feeds) assert.deepEqual(JSON.parse(await readFile(join(directory, 'feeds', `${feed.sourceId}.json`), 'utf8')), feed)
     const before = await readFile(join(directory, 'feeds', 'sogang-academic.json'), 'utf8')
+    for (const source of sources.filter(source => source.site === 'computing')) {
+      const previous = feeds.find(feed => feed.sourceId === source.id)
+      await assert.rejects(collect(directory, async url => {
+        if (url === feedUrl(source)) return new Response('', { status: 404 })
+        if (new URL(url).searchParams.get('bbsConfigFK') === String(source.board)) return new Response('', { status: 503 })
+        return healthy(url)
+      }))
+      assert.deepEqual(JSON.parse(await readFile(join(directory, 'feeds', `${source.id}.json`), 'utf8')), previous)
+      assert.equal(await readFile(join(directory, 'feeds', 'sogang-academic.json'), 'utf8'), before)
+    }
     const old = { ...feeds[0], fetchedAt: fetchedAt.toISOString(), lastAttemptAt: fetchedAt.toISOString() }
     const recoveryFetcher = previous => async url => {
       if (url === sourceUrl) return new Response('Failed', { status: 503 })

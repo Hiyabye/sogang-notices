@@ -16,6 +16,7 @@ const text = node => node.nodeName === '#text' ? node.value : (node.childNodes ?
 const clean = value => value.replace(/\s+/g, ' ').trim()
 
 export function parseCmsPage(html, source, currentPage) {
+  const pageSize = source.pageSize ?? 10
   const doc = parse(html)
   const inputs = descendants(doc, node => node.tagName === 'input')
   for (const [key, expected] of [['bbsConfigFK', String(source.board)], ['siteId', source.site]]) {
@@ -51,7 +52,7 @@ export function parseCmsPage(html, source, currentPage) {
         !/^[1-9]\d*$/.test(id ?? '') || !Number.isSafeInteger(Number(id))) throw new SourceError('Invalid CMS article identity.')
     const comments = descendants(link, node => node.nodeName === '#comment')
     const pinned = descendants(link, node => node.tagName === 'strong').some(node => clean(text(node)) === '[공지]')
-    const directTitle = pinned && (source.id === 'ai-news' || source.id === 'ai-careers')
+    const directTitle = pinned && ['ai-news', 'ai-careers', 'computing-notices'].includes(source.id)
     if (comments.length !== (directTitle ? 0 : 1)) throw new SourceError('Missing full CMS title.')
     // Comments contain the untruncated title with HTML entities. RCDATA decodes
     // those entities without interpreting title text as markup or executing it.
@@ -73,11 +74,11 @@ export function parseCmsPage(html, source, currentPage) {
     return { id: Number(id), pinned, ordinal, title, url: url.href, publishedDate: date }
   })
   const regular = rows.filter(row => !row.pinned)
-  if (rows.length === 0 || rows.length > 500 || regular.length > 10 || (currentPage < pages && regular.length !== 10)) {
+  if (rows.length === 0 || rows.length > 500 || regular.length > pageSize || (currentPage < pages && regular.length !== pageSize)) {
     throw new SourceError('Incomplete CMS list.')
   }
-  const totalRegular = regular.length ? regular[0].ordinal + (currentPage - 1) * 10 : 0
-  if ((totalRegular && Math.ceil(totalRegular / 10) !== pages) || regular.length !== Math.min(10, totalRegular - (currentPage - 1) * 10) ||
+  const totalRegular = regular.length ? regular[0].ordinal + (currentPage - 1) * pageSize : 0
+  if ((totalRegular && Math.ceil(totalRegular / pageSize) !== pages) || regular.length !== Math.min(pageSize, totalRegular - (currentPage - 1) * pageSize) ||
       regular.some((row, index) => row.ordinal !== regular[0].ordinal - index)) throw new SourceError('Truncated or inconsistent CMS rows.')
   for (const pinned of [true, false]) {
     const group = rows.filter(row => row.pinned === pinned)

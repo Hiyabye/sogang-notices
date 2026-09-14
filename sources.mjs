@@ -1,5 +1,7 @@
 export const sources = [
   { id: 'sogang-academic', site: null, board: 2, host: 'www' },
+  { id: 'computing-notices', site: 'computing', board: 7332, host: 'computing', pageSize: 15 },
+  { id: 'computing-news', site: 'computing', board: 7333, host: 'computing', pageSize: 15 },
   { id: 'cs-main', site: 'cs', board: 1905, host: 'cs' },
   { id: 'cs-undergraduate', site: 'cs', board: 1745, host: 'cs' },
   { id: 'cs-graduate', site: 'cs', board: 1747, host: 'cs' },

@@ -105,7 +105,8 @@ async function request(url, type, fetcher) {
 export async function collectSource(source, fetcher = fetch) {
   if (!source.site) return buildFeed(await request(sourceUrl, 'application/json', fetcher))
   const pages = []
-  for (let page = 1; page <= 3; page++) {
+  const samplePages = Math.ceil(noticeCount / (source.pageSize ?? 10))
+  for (let page = 1; page <= samplePages; page++) {
     const html = await request(boardUrl(source, page), 'text/html', fetcher)
     pages.push(parseCmsPage(html, source, page))
     if (page === pages[0].pages) break
