@@ -1,8 +1,0 @@
-# Isolated OCR feasibility environment. Not installed by npm test or Rill.
-# Regenerate with Python 3.13 using the command recorded in ocr/README.md.
-paddleocr==3.7.0
-paddlepaddle==3.3.1
-paddlex==3.7.2
-Pillow==12.3.0
-opencv-contrib-python==4.10.0.84
-numpy==2.3.5

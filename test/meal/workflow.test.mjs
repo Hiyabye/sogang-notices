@@ -27,10 +27,11 @@ test('one Pages publisher separates preparation, optional OCR, strict assembly a
     assert.doesNotMatch(jobs[name], /pages: write|id-token: write|environment:/)
   }
   assert.match(jobs.ocr, /needs\.prepare\.outputs\.needsOcr == 'true'/)
-  assert.match(jobs.ocr, /--require-hashes --only-binary=:all:/)
-  // The colon-space in :all: needs a YAML block scalar, not an unquoted mapping value.
-  assert.match(jobs.ocr, /run: >-\n\s+python -m pip install/)
-  assert.match(jobs.ocr, /timeout 300s python ocr\/run_bellarmine.py/)
+  assert.match(
+    jobs.ocr,
+    /timeout 180s npm run meals:extract -- --work work/,
+  )
+  assert.doesNotMatch(yaml, /setup-python/)
   assert.match(
     jobs.assemble,
     /always\(\) && needs\.prepare\.result == 'success'/,

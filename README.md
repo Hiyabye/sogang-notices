@@ -42,7 +42,7 @@ The single publication workflow now prepares notices and bounded meal inputs, co
 
 Automatic extraction rejects bad source dates, unknown layouts and uncertain/clipped content. The narrowly approved `meal/reviewed.json` entry resolves this particular image's stale banner and OCR/artwork errors using a pixel-checked full-week transcription. The post title and seven dated columns agree on September 14-20. Preparation still fetches the current article/image; both preparation and assembly require exact source identity, image SHA-256 and period matches. Changed bytes or identity cannot inherit the correction through ordinary cache reuse. Review data participates in the pipeline fingerprint. No images, logos, promotional captions or personal/contact fields are published. A failed attempt preserves complete last-good weeks and their real verification/extraction times. Explicit first-time bootstrap can produce `unavailable` with no weeks; this is not an empty successful menu. An unavailable/corrupt required baseline stops subsequent rolling preparation before university requests. Unchanged validated image bytes plus the same pipeline fingerprint skip OCR; changed bytes or processing rules require it again.
 
-After separate release approval, the **first meal publication must use `meal_mode: bootstrap`**. Use notice `mode: rolling` if all 41 published notice feeds already exist, or `full` only for intentional notice bootstrap/repair. Do not push this workflow expecting unattended rolling runs to initialize a missing meal baseline. Run/deployment scheduling and actual CORS still require live verification. See [ocr/README.md](ocr/README.md) for setup and unresolved source-image failures.
+After separate release approval, the **first meal publication must use `meal_mode: bootstrap`**. Use notice `mode: rolling` if all 41 published notice feeds already exist, or `full` only for intentional notice bootstrap/repair. Do not push this workflow expecting unattended rolling runs to initialize a missing meal baseline. Run/deployment scheduling and actual CORS still require live verification. Ensure `OPENROUTER_API` (or `OPENROUTER_API_KEY`) is set via GitHub Secrets or `.env` for meal extraction.
 
 ## Run locally
 
@@ -60,12 +60,12 @@ npm run collect -- --mode=full        # Explicit full bootstrap/repair
 - Both modes stage the complete 41-file set under `public/feeds/` only after validation succeeds. Carried feeds keep their original timestamps and error status. A local full run does not initialize the published baseline: its output must be published before rolling runs can use it.
 - Local collection does **not** publish anything or change the feed Rill uses. Generated output is ignored by Git.
 
-For the complete, explicitly initialized meal pipeline, after installing the isolated Python environment and pinned model assets described in `ocr/README.md`:
+For the complete, explicitly initialized meal pipeline with `OPENROUTER_API` (or `OPENROUTER_API_KEY`) set in `.env` or the environment:
 
 ```sh
 npm run meals:prepare -- --meal-mode=bootstrap --notice-mode=rolling
 # Run only when prepared.json has candidates without a reused result:
-.venv-ocr/bin/python ocr/run_bellarmine.py --work work --models ocr/models
+npm run meals:extract -- --work work
 npm run meals:assemble
 ```
 

@@ -9,6 +9,7 @@
     "test": "node --test",
     "collect": "NODE_EXTRA_CA_CERTS=certificates/sogang-intermediates.pem node collect.mjs",
     "meals:prepare": "NODE_EXTRA_CA_CERTS=certificates/sogang-intermediates.pem node meal/publish.mjs prepare",
+    "meals:extract": "node meal/extract.mjs",
     "meals:assemble": "node meal/publish.mjs assemble"
   },
   "dependencies": {

@@ -29,10 +29,7 @@ const errorCodes = ['source', 'date-mismatch', 'layout', 'ocr-quality']
 export async function pipelineId() {
   const hash = createHash('sha256')
   for (const name of [
-    'ocr/extract_bellarmine.py',
-    'ocr/run_bellarmine.py',
-    'ocr/requirements.lock',
-    'ocr/models.json',
+    'meal/extract.mjs',
     'meal/schema.mjs',
     'meal/bellarmine.mjs',
     'meal/publish.mjs',

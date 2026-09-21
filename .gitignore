@@ -1,8 +1,4 @@
 node_modules/
 public/
-.venv-ocr/
-ocr/__pycache__/
-ocr/models/
-ocr/artifacts/
 work/
 meal-site/
