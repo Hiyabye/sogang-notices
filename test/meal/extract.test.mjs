@@ -181,8 +181,9 @@ test('normalizeMenuDays rejects invalid day count', () => {
   )
 })
 
-test('callOpenRouter makes authenticated request with image data and retries on failure', async () => {
+test('callOpenRouter makes authenticated request with image data and retries transient failures with backoff', async () => {
   let callCount = 0
+  const waits = []
   const fetcher = async (url, options) => {
     callCount++
     assert.equal(url, 'https://openrouter.ai/api/v1/chat/completions')
@@ -211,10 +212,138 @@ test('callOpenRouter makes authenticated request with image data and retries on 
     weekEnd,
     apiKey: 'test-key',
     fetcher,
+    sleep: (ms) => {
+      waits.push(ms)
+    },
   })
 
   assert.equal(callCount, 2)
+  assert.deepEqual(waits, [5000])
   assert.deepEqual(JSON.parse(result), sampleModelOutput)
+})
+
+test('callOpenRouter retries upstream throttling and honors Retry-After', async () => {
+  let callCount = 0
+  const waits = []
+  const fetcher = async () => {
+    callCount++
+    if (callCount === 1) {
+      return new Response(
+        JSON.stringify({ error: { code: 124, message: 'Upstream Throttling' } }),
+        { status: 429, headers: { 'Retry-After': '7' } },
+      )
+    }
+    return Response.json({
+      choices: [{ message: { content: JSON.stringify(sampleModelOutput) } }],
+    })
+  }
+
+  const result = await callOpenRouter({
+    imageBytes: pngBytes,
+    mimeType: 'image/png',
+    weekStart,
+    weekEnd,
+    apiKey: 'test-key',
+    fetcher,
+    sleep: (ms) => {
+      waits.push(ms)
+    },
+  })
+
+  assert.equal(callCount, 2)
+  assert.deepEqual(waits, [7000])
+  assert.deepEqual(JSON.parse(result), sampleModelOutput)
+})
+
+test('callOpenRouter retries throttling carried in a 200 error payload', async () => {
+  let callCount = 0
+  const waits = []
+  const fetcher = async () => {
+    callCount++
+    if (callCount === 1) {
+      return Response.json({
+        error: { code: 124, message: 'Upstream Throttling' },
+      })
+    }
+    return Response.json({
+      choices: [{ message: { content: JSON.stringify(sampleModelOutput) } }],
+    })
+  }
+
+  const result = await callOpenRouter({
+    imageBytes: pngBytes,
+    mimeType: 'image/png',
+    weekStart,
+    weekEnd,
+    apiKey: 'test-key',
+    fetcher,
+    sleep: (ms) => {
+      waits.push(ms)
+    },
+  })
+
+  assert.equal(callCount, 2)
+  assert.deepEqual(waits, [5000])
+  assert.deepEqual(JSON.parse(result), sampleModelOutput)
+})
+
+test('callOpenRouter exhausts bounded retries on persistent throttling', async () => {
+  let callCount = 0
+  const waits = []
+  const fetcher = async () => {
+    callCount++
+    return new Response(
+      JSON.stringify({ error: { code: 124, message: 'Upstream Throttling' } }),
+      { status: 429 },
+    )
+  }
+
+  await assert.rejects(
+    callOpenRouter({
+      imageBytes: pngBytes,
+      mimeType: 'image/png',
+      weekStart,
+      weekEnd,
+      apiKey: 'test-key',
+      fetcher,
+      retries: 2,
+      sleep: (ms) => {
+        waits.push(ms)
+      },
+    }),
+    /OpenRouter API error 429/,
+  )
+  assert.equal(callCount, 3)
+  assert.deepEqual(waits, [5000, 10000])
+})
+
+test('callOpenRouter fails fast on non-retryable errors', async () => {
+  let callCount = 0
+  const waits = []
+  const fetcher = async () => {
+    callCount++
+    return new Response(
+      JSON.stringify({ error: { code: 401, message: 'Bad API key' } }),
+      { status: 401 },
+    )
+  }
+
+  await assert.rejects(
+    callOpenRouter({
+      imageBytes: pngBytes,
+      mimeType: 'image/png',
+      weekStart,
+      weekEnd,
+      apiKey: 'test-key',
+      fetcher,
+      sleep: (ms) => {
+        waits.push(ms)
+      },
+    }),
+    /OpenRouter API error 401/,
+  )
+  assert.equal(callCount, 1)
+  assert.deepEqual(waits, [])
 })
 
 test('extractMeals orchestrates end-to-end extraction and writes valid results', async () => {
@@ -328,6 +457,65 @@ test('extractMeals rejects on model failure without crashing', async () => {
     assert.equal(results[0].status, 'rejected')
     assert.equal(results[0].errorCode, 'ocr-quality')
     assert.equal(results[0].postId, '100')
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('extractMeals spaces OpenRouter requests across candidates', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'extract-gap-test-'))
+  try {
+    const pipelineId = 'f'.repeat(64)
+    const imageSha256 = createHash('sha256').update(pngBytes).digest('hex')
+    const candidate = (postId) => ({
+      weekStart,
+      weekEnd,
+      source: {
+        postId,
+        title: '9월 7일 ~ 9월 13일 식단',
+        postUrl: `https://scc.sogang.ac.kr/front/cmsboardview.do?bbsConfigFK=1185&siteId=dormitory&pkid=${postId}`,
+        imageUrl: null,
+        imageSha256,
+      },
+      image: `${postId}.image`,
+      reused: null,
+    })
+    const manifest = {
+      pipelineId,
+      lastAttemptAt: new Date().toISOString(),
+      baseline: null,
+      errorCode: null,
+      candidates: [candidate('101'), candidate('102')],
+    }
+
+    await writeFile(join(dir, 'prepared.json'), JSON.stringify(manifest))
+    await writeFile(join(dir, '101.image'), pngBytes)
+    await writeFile(join(dir, '102.image'), pngBytes)
+
+    let callCount = 0
+    const waits = []
+    const fetcher = async () => {
+      callCount++
+      return Response.json({
+        choices: [{ message: { content: JSON.stringify(sampleModelOutput) } }],
+      })
+    }
+
+    const results = await extractMeals(dir, {
+      apiKey: 'dummy-key',
+      fetcher,
+      requestGapMs: 1234,
+      sleep: (ms) => {
+        waits.push(ms)
+      },
+    })
+
+    assert.equal(callCount, 2)
+    assert.deepEqual(waits, [1234])
+    assert.deepEqual(
+      results.map((result) => result.status),
+      ['ok', 'ok'],
+    )
   } finally {
     await rm(dir, { recursive: true, force: true })
   }

@@ -29,8 +29,9 @@ test('one Pages publisher separates preparation, optional OCR, strict assembly a
   assert.match(jobs.ocr, /needs\.prepare\.outputs\.needsOcr == 'true'/)
   assert.match(
     jobs.ocr,
-    /timeout 180s npm run meals:extract -- --work work/,
+    /timeout 600s npm run meals:extract -- --work work/,
   )
+  assert.match(jobs.ocr, /timeout-minutes: 12/)
   assert.doesNotMatch(yaml, /setup-python/)
   assert.match(
     jobs.assemble,

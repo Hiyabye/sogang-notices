@@ -185,6 +185,31 @@ export function normalizeMenuDays(parsed, weekStart) {
   return result
 }
 
+const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504])
+const RETRY_BASE_MS = 5000
+const RETRY_MAX_MS = 20000
+const RETRY_AFTER_MAX_MS = 30000
+export const DEFAULT_REQUEST_GAP_MS = 5000
+
+// OpenRouter surfaces upstream throttling as error code 124, usually on HTTP 429.
+function isThrottling(text) {
+  return /"code"\s*:\s*124/.test(text) || /throttl/i.test(text)
+}
+
+function retryAfterMs(res) {
+  const header = res.headers.get('retry-after')
+  if (!header) return null
+  const seconds = Number(header)
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.min(seconds * 1000, RETRY_AFTER_MAX_MS)
+  }
+  const date = Date.parse(header)
+  if (!Number.isNaN(date)) {
+    return Math.min(Math.max(date - Date.now(), 0), RETRY_AFTER_MAX_MS)
+  }
+  return null
+}
+
 export async function callOpenRouter({
   imageBytes,
   mimeType,
@@ -193,7 +218,8 @@ export async function callOpenRouter({
   apiKey,
   model = DEFAULT_MODEL,
   fetcher = fetch,
-  retries = 2,
+  sleep = delay,
+  retries = 3,
 }) {
   const prompt = buildPrompt(weekStart, weekEnd)
   const base64 = imageBytes.toString('base64')
@@ -219,7 +245,10 @@ export async function callOpenRouter({
   let lastError
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (attempt > 0) {
-      await delay(2000 * Math.pow(2, attempt - 1))
+      await sleep(
+        lastError?.retryAfterMs ??
+          Math.min(RETRY_BASE_MS * Math.pow(2, attempt - 1), RETRY_MAX_MS),
+      )
     }
     try {
       const res = await fetcher('https://openrouter.ai/api/v1/chat/completions', {
@@ -236,19 +265,34 @@ export async function callOpenRouter({
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => '')
-        throw new Error(
+        const error = new Error(
           `OpenRouter API error ${res.status}: ${errorText.slice(0, 200)}`,
         )
+        error.retryable =
+          RETRYABLE_STATUS.has(res.status) || isThrottling(errorText)
+        error.retryAfterMs = retryAfterMs(res)
+        throw error
       }
 
       const json = await res.json()
       const content = json.choices?.[0]?.message?.content
       if (!content || typeof content !== 'string') {
-        throw new Error('OpenRouter response has no content')
+        const errorText = json?.error ? JSON.stringify(json.error) : ''
+        const error = new Error(
+          errorText
+            ? `OpenRouter response error: ${errorText.slice(0, 200)}`
+            : 'OpenRouter response has no content',
+        )
+        // Throttling can arrive inside a 200 body; other structured errors
+        // (bad key, unknown model) will not heal and must fail fast.
+        error.retryable = isThrottling(errorText) || !json?.error
+        error.retryAfterMs = null
+        throw error
       }
       return content
     } catch (err) {
       lastError = err
+      if (err.retryable === false) throw err
     }
   }
   throw lastError
@@ -303,6 +347,8 @@ export async function extractMeals(
     apiKey = process.env.OPENROUTER_API || process.env.OPENROUTER_API_KEY,
     model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL,
     fetcher = fetch,
+    sleep = delay,
+    requestGapMs = DEFAULT_REQUEST_GAP_MS,
   } = {},
 ) {
   const manifest = await boundedJson(join(work, 'prepared.json'))
@@ -320,6 +366,7 @@ export async function extractMeals(
   }
 
   const results = []
+  let requested = false
   for (const candidate of candidates) {
     if (candidate.reused !== null) continue
     const postId = candidate.source?.postId
@@ -345,6 +392,9 @@ export async function extractMeals(
 
     try {
       const mimeType = imageMimeType(imageBytes)
+      // Space OpenRouter requests so back-to-back weeks do not throttle.
+      if (requested) await sleep(requestGapMs)
+      requested = true
       const rawOutput = await callOpenRouter({
         imageBytes,
         mimeType,
@@ -353,6 +403,7 @@ export async function extractMeals(
         apiKey,
         model,
         fetcher,
+        sleep,
       })
 
       const parsed = parseModelJson(rawOutput)

@@ -57,7 +57,7 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.needsOcr == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     permissions:
       contents: read
     steps:
@@ -76,7 +76,7 @@ jobs:
         env:
           OPENROUTER_API: ${{ secrets.OPENROUTER_API || secrets.OPENROUTER_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY || secrets.OPENROUTER_API }}
-        run: timeout 180s npm run meals:extract -- --work work
+        run: timeout 600s npm run meals:extract -- --work work
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: ocr-results
