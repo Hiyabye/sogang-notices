@@ -2,15 +2,30 @@ import { SourceError } from './feed.mjs'
 
 export function descendants(node, predicate) {
   const result = []
-  for (const child of node.childNodes ?? []) {
+  const stack = [...(node.childNodes ?? [])].reverse()
+  while (stack.length) {
+    const child = stack.pop()
     if (predicate(child)) result.push(child)
-    result.push(...descendants(child, predicate))
+    const children = child.childNodes ?? []
+    for (let index = children.length - 1; index >= 0; index--) stack.push(children[index])
   }
   return result
 }
 export const attr = (node, name) => node?.attrs?.find(attr => attr.name === name)?.value
 export const hasClass = (node, name) => attr(node, 'class')?.split(/\s+/).includes(name)
-export const text = node => node?.nodeName === '#text' ? node.value : (node?.childNodes ?? []).map(text).join('')
+export function text(node) {
+  const values = []
+  const stack = node ? [node] : []
+  while (stack.length) {
+    const child = stack.pop()
+    if (child.nodeName === '#text') values.push(child.value)
+    else {
+      const children = child.childNodes ?? []
+      for (let index = children.length - 1; index >= 0; index--) stack.push(children[index])
+    }
+  }
+  return values.join('')
+}
 export const clean = value => value.replace(/\s+/g, ' ').trim()
 export const elements = (node, tag) => descendants(node, child => child.tagName === tag)
 export function one(nodes, description) {
@@ -46,6 +61,7 @@ export function checkPaging(links, currentPage, pages, source, path, parameter, 
     if (url.searchParams.getAll(parameter).length !== 1) throw new SourceError('Invalid pagination URL.')
     const number = count(url.searchParams.get(parameter) ?? '')
     if (number < 1 || number > pages) throw new SourceError('Invalid page range.')
+    if (link === selected && number !== currentPage) throw new SourceError('Wrong selected page URL.')
     numbers.push(number)
   }
   if (Math.max(...numbers) !== pages) throw new SourceError('Incomplete pagination.')

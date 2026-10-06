@@ -4,7 +4,7 @@ import { SourceError } from './feed.mjs'
 // cross-page consistency and distinct regular coverage before mixing in pins.
 export function selectNotices(pages, pinsConsumeSlots = false) {
   const unique = new Map()
-  let regular = 0
+  const regular = new Set()
   let previousDate
   let previousPinnedDate
   for (const [index, page] of pages.entries()) {
@@ -17,14 +17,15 @@ export function selectNotices(pages, pinsConsumeSlots = false) {
       const previous = unique.get(row.url)
       if (previous && (previous.title !== row.title || previous.publishedDate !== row.publishedDate)) throw new SourceError('Conflicting list duplicate.')
       if (!row.pinned) {
+        if (regular.has(row.url)) throw new SourceError('Duplicate regular article.')
         if (previousDate && row.publishedDate > previousDate) throw new SourceError('List cross-page date ordering changed.')
         previousDate = row.publishedDate
-        if (!previous) regular++
+        regular.add(row.url)
       }
       unique.set(row.url, row)
     }
   }
-  if (pages.length < pages[0].pages && regular < 30) throw new SourceError('Incomplete regular sample.')
+  if (pages.length < pages[0].pages && regular.size < 30) throw new SourceError('Incomplete regular sample.')
   return [...unique.values()].sort((a, b) => b.publishedDate.localeCompare(a.publishedDate) || b.id - a.id)
     .slice(0, 30).map(({ title, url, publishedDate }) => ({ title, url, publishedDate }))
 }

@@ -6,6 +6,7 @@ import { selectNotices } from './list.mjs'
 import { parseCommunityPage } from './community.mjs'
 import { parseMechanicalPage } from './mechanical.mjs'
 import { parseSemiconductorPage } from './semiconductor.mjs'
+import { parseComputingPage } from './computing.mjs'
 import { validateFeed, SourceError } from './feed.mjs'
 import { pathToFileURL } from 'node:url'
 import { batches, validateBatches, selectBatch } from './batches.mjs'
@@ -110,7 +111,8 @@ async function request(url, type, fetcher) {
 
 export async function collectSource(source, fetcher = fetch) {
   if (source.id === 'sogang-academic') return buildFeed(await request(sourceUrl, 'application/json', fetcher))
-  const parsePage = source.kind === 'community' ? parseCommunityPage
+  const parsePage = source.kind === 'computing' ? parseComputingPage
+    : source.kind === 'community' ? parseCommunityPage
     : source.kind === 'mechanical' ? parseMechanicalPage
       : source.kind === 'semiconductor' ? parseSemiconductorPage : parseCmsPage
   const pages = []

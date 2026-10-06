@@ -1,9 +1,9 @@
 # Sogang notices
 
-A small collector for 41 public Sogang University notice boards, used by [Rill](https://hiyabye.github.io/Rill/): university academic notices, the College of Computing and its three departments, and the College of Engineering with Electronic, Mechanical, System Semiconductor and Semiconductor Engineering.
+A small collector for 32 public Sogang University notice boards, used by [Rill](https://hiyabye.github.io/Rill/): university academic notices, five unified College of Computing boards (학사 공지, 대학원 공지, 대외정보, 소식, 취업·인턴십), and the College of Engineering with Electronic, Mechanical, System Semiconductor and Semiconductor Engineering. 인터뷰 and THE COMPUTING are not collected.
 
 - **University source board:** https://www.sogang.ac.kr/ko/academic-support/notices
-- **Computing college:** https://computing.sogang.ac.kr/computing/index.html
+- **Computing college:** https://computing.sogang.ac.kr/ko/community/academicNotice/list
 - **Engineering college:** https://eng.sogang.ac.kr/eng/index_new.html
 - Dean's List, resource archives, galleries and unlisted departments are not collected.
 - **Feed addresses:** `https://hiyabye.github.io/sogang-notices/feeds/<source-id>.json`
@@ -16,15 +16,15 @@ Each board feed contains up to 30 recent notices with list titles, publication d
 
 CMS comments supply full titles where available. Some new source lists shorten titles without supplying the full text; the feed preserves the available text rather than fetching articles. Electronic Engineering also emits one Korean job-title shape as unescaped markup; its exact literal text is safely retained. Other missing or malformed titles remain errors.
 
-The main board uses public JSON. CMS, PHP community, Mechanical Engineering's server-rendered tables, and Semiconductor lists are parsed with parse5 without executing scripts. Collection samples 50 main-site records or enough source-specific pages to cover 30 regular records. Pins consume slots on some sites, so those sources allow at most six pages. Collection stops early at the board end. Counts, identities, ordering and pagination are validated; incomplete samples fail rather than publish a misleading list.
+The main board uses public JSON. Computing's Nuxt server-rendered tables, CMS, PHP community, Mechanical Engineering's server-rendered tables, and Semiconductor lists are parsed with parse5 without executing scripts. Collection samples 50 main-site records or enough source-specific pages to cover 30 regular records. Pins consume slots on some sites, so those sources allow at most six pages. Collection stops early at the board end. Counts, identities, ordering and pagination are validated; incomplete samples fail rather than publish a misleading list.
 
-An attempted board that fails retains validated previously published data with an error status. Boards outside the selected batch are carried forward without changing their notices, status or timestamps. Every deployment contains all 41 feeds, never just the refreshed batch. A successful empty list is distinct from an unavailable source.
+An attempted board that fails retains validated previously published data with an error status. Boards outside the selected batch are carried forward without changing their notices, status or timestamps. Every deployment contains all 32 active feeds, never just the refreshed batch. A successful empty list is distinct from an unavailable source.
 
 Rolling runs require a complete, valid published baseline. If any prior feed is missing, unavailable or invalid, the run stops before contacting Sogang and leaves the published site unchanged. It never silently falls back to a full crawl. An explicit full bootstrap/repair can rebuild the set; a failed board still needs valid published recovery data, so newly added boards must succeed on their first publication.
 
 ## Update times and freshness
 
-Updates are scheduled **hourly at minute 17** (`17 * * * *`, UTC). Each run refreshes one of six stable batches, balanced at roughly 17-18 expected university list requests per batch rather than equal board counts. With normal hourly execution, each board is attempted about every six hours. Manual rolling and full-refresh runs are also available.
+Updates are scheduled **hourly at minute 17** (`17 * * * *`, UTC). Each run refreshes one of six stable batches, balanced at roughly 12-15 expected university list requests per batch rather than equal board counts. With normal hourly execution, each board is attempted about every six hours. Manual rolling and full-refresh runs are also available.
 
 The least-recently attempted batch runs next, using the existing published attempt timestamps rather than the wall-clock hour. Missed runs therefore do not permanently skip a batch, and recovery resumes one batch at a time without a catch-up request spike. Failed attempts also advance that batch's turn so an unavailable board cannot starve the others. Successful freshness is not guaranteed during source or workflow outages; console output and the run summary flag feeds without a successful fetch in 24 hours.
 
@@ -36,13 +36,13 @@ Published feeds were observed with a ten-minute cache lifetime. Rill checks subs
 
 ## Bellarmine meal work
 
-Bellarmine bootstrap was [published on September 14, 2026](https://github.com/Hiyabye/sogang-notices/actions/runs/34839647879), after the owner confirmed source-use permission. Linux installation, tests and OCR execution succeeded. The initial feed contained no dishes because automatic validation rejected the source's conflicting dates. The owner subsequently approved a full-week reviewed correction for post 940528, bound to its exact image bytes. This provides September 14-20 dishes without claiming the general OCR engine has passed full-week acceptance. Existing `npm run collect` notice-only behavior and all 41 notice schemas are unchanged.
+Bellarmine bootstrap was [published on September 14, 2026](https://github.com/Hiyabye/sogang-notices/actions/runs/34839647879), after the owner confirmed source-use permission. Linux installation, tests and OCR execution succeeded. The initial feed contained no dishes because automatic validation rejected the source's conflicting dates. The owner subsequently approved a full-week reviewed correction for post 940528, bound to its exact image bytes. This provides September 14-20 dishes without claiming the general OCR engine has passed full-week acceptance. That meal work did not change the then-existing 41 notice feeds or their schemas. The current Computing catalog replacement below keeps notice schema 2.
 
 The single publication workflow now prepares notices and bounded meal inputs, conditionally runs isolated CPU OCR, validates/stages the whole site, then deploys on a separate credentialed runner. The meal path is `https://hiyabye.github.io/sogang-notices/meals/bellarmine.json`, independent schema 1. It contains up to two dated weeks, structured offerings and original-post provenance, not source images, contact information or raw OCR boxes. Cup rice is separate from dinner/breakfast, not an inferred daily lunch service.
 
 Automatic extraction rejects bad source dates, unknown layouts and uncertain/clipped content. The narrowly approved `meal/reviewed.json` entry resolves this particular image's stale banner and OCR/artwork errors using a pixel-checked full-week transcription. The post title and seven dated columns agree on September 14-20. Preparation still fetches the current article/image; both preparation and assembly require exact source identity, image SHA-256 and period matches. Changed bytes or identity cannot inherit the correction through ordinary cache reuse. Review data participates in the pipeline fingerprint. No images, logos, promotional captions or personal/contact fields are published. A failed attempt preserves complete last-good weeks and their real verification/extraction times. Explicit first-time bootstrap can produce `unavailable` with no weeks; this is not an empty successful menu. An unavailable/corrupt required baseline stops subsequent rolling preparation before university requests. Unchanged validated image bytes plus the same pipeline fingerprint skip OCR; changed bytes or processing rules require it again.
 
-After separate release approval, the **first meal publication must use `meal_mode: bootstrap`**. Use notice `mode: rolling` if all 41 published notice feeds already exist, or `full` only for intentional notice bootstrap/repair. Do not push this workflow expecting unattended rolling runs to initialize a missing meal baseline. Run/deployment scheduling and actual CORS still require live verification. Ensure `OPENROUTER_API` (or `OPENROUTER_API_KEY`) is set via GitHub Secrets or `.env` for meal extraction.
+After separate release approval, the **first meal publication must use `meal_mode: bootstrap`**. Use notice `mode: rolling` if all 32 active published notice feeds already exist, or `full` only for intentional notice bootstrap/repair. Do not push this workflow expecting unattended rolling runs to initialize a missing meal baseline. Run/deployment scheduling and actual CORS still require live verification. Ensure `OPENROUTER_API` (or `OPENROUTER_API_KEY`) is set via GitHub Secrets or `.env` for meal extraction.
 
 ## Run locally
 
@@ -57,7 +57,7 @@ npm run collect -- --mode=full        # Explicit full bootstrap/repair
 
 - `npm test` is offline and does not deploy or contact Sogang.
 - `npm run collect` first downloads and validates all prior feeds from GitHub Pages, then refreshes only the oldest batch. GitHub reads do not contact the university. At most two boards are collected at once; university request starts are globally spaced by at least one second, even across hostnames. Both modes retain 20-second request timeouts, byte limits and bounded pagination.
-- Both modes stage the complete 41-file set under `public/feeds/` only after validation succeeds. Carried feeds keep their original timestamps and error status. A local full run does not initialize the published baseline: its output must be published before rolling runs can use it.
+- Both modes stage the complete 32-file set under `public/feeds/` only after validation succeeds. Carried feeds keep their original timestamps and error status. A local full run does not initialize the published baseline: its output must be published before rolling runs can use it.
 - Local collection does **not** publish anything or change the feed Rill uses. Generated output is ignored by Git.
 
 For the complete, explicitly initialized meal pipeline with `OPENROUTER_API` (or `OPENROUTER_API_KEY`) set in `.env` or the environment:
@@ -69,7 +69,7 @@ npm run meals:extract -- --work work
 npm run meals:assemble
 ```
 
-Use `--meal-mode=rolling` after publication; bootstrap intentionally does not use a previous meal baseline. `work/` must be empty before preparation. Preserve or move old work aside rather than mixing runs. Preparation writes an empty OCR result file when no OCR is needed. Assembly revalidates the prepared data, source/image/pipeline identities and all 41 notice feeds, and creates a fresh `meal-site/` containing only `feeds/` and `meals/`. It refuses replacing an existing complete site. Move that output aside before another assembly. No source images, models or diagnostic crops belong in the Pages artifact. These commands do not deploy.
+Use `--meal-mode=rolling` after publication; bootstrap intentionally does not use a previous meal baseline. `work/` must be empty before preparation. Preserve or move old work aside rather than mixing runs. Preparation writes an empty OCR result file when no OCR is needed. Assembly revalidates the prepared data, source/image/pipeline identities and all 32 active notice feeds, and creates a fresh `meal-site/` containing only `feeds/` and `meals/`. It refuses replacing an existing complete site. Move that output aside before another assembly. No source images, models or diagnostic crops belong in the Pages artifact. These commands do not deploy.
 
 For architecture, source-field assumptions, testing requirements, and changes coordinated with Rill, see [AGENTS.md](AGENTS.md).
 
@@ -98,7 +98,7 @@ Verified schema-2 response headers are `Content-Type: application/json; charset=
 
 ## Publish or inspect an update
 
-Publish new collector paths before publishing the matching Rill catalog: clients cannot load unpublished feeds. The college additions retain feed schema 2 and all existing IDs. Older Rill versions do not recognize the new subscription IDs, so use an updated version when transferring backups containing them. Use explicit full mode for first publication or after adding boards. A clean bootstrap needs all 41 successful collections; existing boards may recover from valid prior feeds.
+Publish new collector paths before publishing the matching Rill catalog: clients cannot load unpublished feeds. The redesigned Computing site replaces 14 legacy Computing/CS/AI/AI-Based IDs with five new IDs; the other 27 source IDs are unchanged and feed schema 2 is retained. No old ID is assigned an approximate new meaning. Updated Rill preserves old subscription settings/backups and offers explicit subscription review, without requesting retired feeds. Use an updated version when transferring backups with new IDs. The five new paths require an intentional full bootstrap and separately authorized publication before rolling mode can use them. A clean bootstrap needs all 32 successful collections; existing boards may recover from valid prior feeds. Local implementation does not mean these new paths are published.
 
 Pages uses **Settings > Pages > Build and deployment > Source > GitHub Actions**. The **Publish Sogang notices** workflow tests, collects, and deploys only the validated `meal-site/` output using GitHub's official Pages actions. Preparation, conditional OCR and assembly have read-only repository permissions; only the separate deploy job has Pages/OIDC write permissions. An OCR crash, timeout or installation failure blocks assembly rather than masquerading as a skipped/rejected source.
 

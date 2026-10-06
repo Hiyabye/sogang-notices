@@ -19,7 +19,7 @@ export function healthy(url) {
   if (source.kind || source.gallery) html = engineeringFixture(source)
   else {
     html = cms.replaceAll('7530', String(source.board)).replaceAll('aibased', source.site)
-    if (['ai-news', 'ai-careers', 'computing-notices', 'eng-careers'].includes(source.id))
+    if (source.id === 'eng-careers')
       html = html.replace(/(<strong>\[공지\] <\/strong>)\s*<!--[\s\S]*?-->/g, '$1')
   }
   return new Response(html, { headers: { 'Content-Type': 'text/html' } })

@@ -286,7 +286,7 @@ test('missing meal baseline blocks before university I/O, while explicit bootstr
     })
     assert.equal(prepared.errorCode, 'source')
     assert.equal(prepared.baseline, null)
-    assert.equal((await readdir(join(work, 'site/feeds'))).length, 41)
+    assert.equal((await readdir(join(work, 'site/feeds'))).length, 32)
     assert.deepEqual(
       JSON.parse(await readFile(join(work, 'ocr-results.json'), 'utf8')),
       [],
@@ -294,7 +294,7 @@ test('missing meal baseline blocks before university I/O, while explicit bootstr
     const output = join(work, 'complete')
     await assemble(work, output)
     assert.deepEqual((await readdir(output)).sort(), ['feeds', 'meals'])
-    assert.equal((await readdir(join(output, 'feeds'))).length, 41)
+    assert.equal((await readdir(join(output, 'feeds'))).length, 32)
     const feed = parseMealFeed(
       JSON.parse(await readFile(join(output, 'meals/bellarmine.json'), 'utf8')),
     )
@@ -389,7 +389,7 @@ test('assembly refuses incomplete notice artifacts without creating a publishabl
       /Incomplete notice/,
     )
     assert.ok(!(await readdir(work)).includes('output'))
-    assert.equal(sources.length, 41)
+    assert.equal(sources.length, 32)
     assert.equal(maxMealBytes, 256 * 1024)
   } finally {
     await rm(work, { recursive: true, force: true })

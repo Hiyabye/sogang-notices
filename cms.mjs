@@ -66,6 +66,7 @@ export function parseCmsPage(html, source, currentPage) {
   })
   if (gallery && new Set(rows.map(row => row.url)).size !== rows.length) throw new SourceError('Duplicate gallery article.')
   const regular = rows.filter(row => !row.pinned)
+  if (new Set(regular.map(row => row.url)).size !== regular.length) throw new SourceError('Duplicate regular CMS article.')
   if (rows.length === 0 || rows.length > 500 || regular.length > pageSize || (currentPage < pages && regular.length !== pageSize)) {
     throw new SourceError('Incomplete CMS list.')
   }

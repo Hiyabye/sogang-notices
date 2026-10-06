@@ -37,7 +37,7 @@ for (const [id, length, pages, firstTitle] of [
   })
 }
 
-for (const source of sources.filter(source => source.kind)) {
+for (const source of sources.filter(source => source.kind && source.kind !== 'computing')) {
   test(`${source.id} keeps list identity, exact metadata, empty state and validation boundaries`, async () => {
     const html = engineeringFixture(source)
     const parse = value => parser(source)(value, source, 1)
@@ -67,6 +67,19 @@ for (const source of sources.filter(source => source.kind)) {
       const key = source.kind === 'community' ? 'idx' : 'no'
       assert.throws(() => parse(html.replace(`${key}=3`, `${key}=3&${key}=4`)), /ID/)
     }
+  })
+}
+
+for (const [id, heading, formerHeading] of [
+  ['sse-notices', '학과공지', '공지사항'],
+  ['sse-seminars', '일반공지(세미나,홍보 등)', '세미나'],
+]) {
+  test(`${id} requires its renamed observed heading without changing article identity`, () => {
+    const source = sources.find(source => source.id === id)
+    assert.equal(source.label, heading)
+    const html = engineeringFixture(source)
+    assert.equal(parseCommunityPage(html, source, 1).rows.length, 3)
+    assert.throws(() => parseCommunityPage(html.replace(heading, formerHeading), source, 1), /Wrong community board heading/)
   })
 }
 

@@ -1,19 +1,10 @@
 export const sources = [
   { id: 'sogang-academic', site: null, board: 2, host: 'www' },
-  { id: 'computing-notices', site: 'computing', board: 7332, host: 'computing', pageSize: 15 },
-  { id: 'computing-news', site: 'computing', board: 7333, host: 'computing', pageSize: 15 },
-  { id: 'cs-main', site: 'cs', board: 1905, host: 'cs' },
-  { id: 'cs-undergraduate', site: 'cs', board: 1745, host: 'cs' },
-  { id: 'cs-graduate', site: 'cs', board: 1747, host: 'cs' },
-  { id: 'cs-general', site: 'cs', board: 1746, host: 'cs' },
-  { id: 'cs-careers', site: 'cs', board: 1748, host: 'cs' },
-  { id: 'cs-news', site: 'cs', board: 1749, host: 'cs' },
-  { id: 'ai-academic', site: 'ai', board: 5110, host: 'ai' },
-  { id: 'ai-news', site: 'ai', board: 5130, host: 'ai' },
-  { id: 'ai-general', site: 'ai', board: 6330, host: 'ai' },
-  { id: 'ai-careers', site: 'ai', board: 5131, host: 'ai' },
-  { id: 'aibased-notices', site: 'aibased', board: 7510, host: 'scc' },
-  { id: 'aibased-news', site: 'aibased', board: 7530, host: 'scc' },
+  { id: 'computing-academic', kind: 'computing', board: 'academicNotice', host: 'computing', path: '/ko/community/academicNotice/list', label: '학사 공지' },
+  { id: 'computing-graduate', kind: 'computing', board: 'graduateNotice', host: 'computing', path: '/ko/community/graduateNotice/list', label: '대학원 공지' },
+  { id: 'computing-external', kind: 'computing', board: 'externalInfo', host: 'computing', path: '/ko/community/externalInfo/list', label: '대외정보' },
+  { id: 'computing-updates', kind: 'computing', board: 'news', host: 'computing', path: '/ko/community/news/list', label: '소식' },
+  { id: 'computing-career', kind: 'computing', board: 'career', host: 'computing', path: '/ko/community/career/list', label: '취업·인턴십' },
   { id: 'eng-academic', site: 'eng', board: 1628, host: 'eng' },
   { id: 'eng-research', site: 'eng', board: 1627, host: 'eng' },
   { id: 'eng-general', site: 'eng', board: 1624, host: 'eng' },
@@ -32,9 +23,9 @@ export const sources = [
   { id: 'me-careers', kind: 'mechanical', host: 'me', board: 'scholarship', label: '장학·취업정보', pageSize: 15 },
   { id: 'me-events', kind: 'mechanical', host: 'me', board: 'events', label: '외부 행사', pageSize: 15 },
   { id: 'me-alumni', kind: 'mechanical', host: 'me', board: 'alumni_news', label: '기계공학과 동문 소식', pageSize: 15 },
-  { id: 'sse-notices', kind: 'community', host: 'sse', path: '/kor/community/notice.php', label: '공지사항' },
+  { id: 'sse-notices', kind: 'community', host: 'sse', path: '/kor/community/notice.php', label: '학과공지' },
   { id: 'sse-news', kind: 'community', host: 'sse', path: '/kor/community/news.php', label: '학과소식', pageSize: 9, gallery: true },
-  { id: 'sse-seminars', kind: 'community', host: 'sse', path: '/kor/community/seminar.php', label: '세미나' },
+  { id: 'sse-seminars', kind: 'community', host: 'sse', path: '/kor/community/seminar.php', label: '일반공지(세미나,홍보 등)' },
   { id: 'se-notices', kind: 'semiconductor', host: 'se', board: 'notice', label: '학과 공지사항' },
   { id: 'se-graduate', kind: 'semiconductor', host: 'se', board: 'notice_master', label: '대학원 공지사항' },
   { id: 'se-news', kind: 'semiconductor', host: 'se', board: 'news', label: '학과소식' },
@@ -50,7 +41,7 @@ export function boardUrl(source, page = 1) {
       : source.kind === 'semiconductor' ? '/board/board_list.php' : source.path
     const url = new URL(path, `https://${source.host}.sogang.ac.kr`)
     if (source.kind === 'semiconductor') url.searchParams.set('board_id', source.board)
-    url.searchParams.set(source.kind === 'community' ? 'pNo' : 'page', String(page))
+    url.searchParams.set(source.kind === 'computing' ? 'num' : source.kind === 'community' ? 'pNo' : 'page', String(page))
     return url.href
   }
   const url = new URL(`https://${source.host}.sogang.ac.kr/front/cmsboardlist.do`)

@@ -3,10 +3,10 @@ import { test } from 'node:test'
 import { readFile } from 'node:fs/promises'
 import { parseCmsPage } from '../cms.mjs'
 import { selectNotices } from '../list.mjs'
-import { sources } from '../sources.mjs'
 import { collectSource } from '../collect.mjs'
 
-const source = sources.find(source => source.id === 'aibased-news')
+// Retired-source fixtures still exercise the CMS skin used by Engineering.
+const source = { id: 'aibased-news', site: 'aibased', board: 7530, host: 'scc' }
 const html = await readFile(new URL('./fixtures/cms-list.html', import.meta.url), 'utf8')
 const empty = await readFile(new URL('./fixtures/cms-empty.html', import.meta.url), 'utf8')
 
@@ -44,7 +44,7 @@ for (const [id, count, regular, pages] of [
   ['computing-notices', 19, 91, 7], ['computing-news', 15, 18, 2],
 ]) {
   test(`${id} accepts its observed 15-row page, full titles and strict board identity`, async () => {
-    const source = sources.find(source => source.id === id)
+    const source = { id, site: 'computing', board: id === 'computing-notices' ? 7332 : 7333, host: 'computing', pageSize: 15 }
     const html = await readFile(new URL(`./fixtures/${id}.html`, import.meta.url), 'utf8')
     const page = parseCmsPage(html, source, 1)
     assert.equal(page.rows.length, count)
@@ -69,14 +69,14 @@ for (const [id, count, regular, pages] of [
 }
 
 test('15-row CMS collection requests only two pages and rejects a truncated or inconsistent second page', async () => {
-  const source = sources.find(source => source.id === 'computing-notices')
+  const fixtureSource = { id: 'legacy-computing-fixture', site: 'computing', board: 7332, host: 'computing', pageSize: 15 }
   const pageHtml = page => `<input name="siteId" value="computing"><input name="bbsConfigFK" value="7332">
     <div class="list_box"><ul>${Array.from({ length: 15 }, (_, index) => {
       const ordinal = 45 - (page - 1) * 15 - index
       return `<li><div><div>${ordinal}</div><a class="title" href="/front/cmsboardview.do?siteId=computing&bbsConfigFK=7332&pkid=${ordinal}"><!-- Notice ${ordinal} -->Short</a><div class="info"><span></span><span>2026.09.01</span></div></div></li>`
     }).join('')}</ul></div><div class="board_paging"><span class="on">${page}</span><span class="total_cnt">/ 3</span></div>`
   const requested = []
-  const feed = await collectSource(source, async (url, options) => {
+  const feed = await collectSource(fixtureSource, async (url, options) => {
     const page = Number(new URL(url).searchParams.get('currentPage'))
     requested.push(page)
     assert.equal(options.redirect, 'error')
@@ -85,7 +85,7 @@ test('15-row CMS collection requests only two pages and rejects a truncated or i
   assert.deepEqual(requested, [1, 2])
   assert.deepEqual(feed.notices.map(notice => notice.title), Array.from({ length: 30 }, (_, index) => `Notice ${45 - index}`))
   for (const html of [pageHtml(2).replace(/<li>[^]*?<\/li>/, ''), pageHtml(2).replace('/ 3', '/ 4')]) {
-    await assert.rejects(collectSource(source, async url => new Response(
+    await assert.rejects(collectSource(fixtureSource, async url => new Response(
       new URL(url).searchParams.get('currentPage') === '1' ? pageHtml(1) : html,
       { headers: { 'Content-Type': 'text/html' } },
     )), /Incomplete|inconsistent|pagination/)

@@ -103,10 +103,10 @@ test('all-board bootstrap, recovered failures, unsafe recovery and write failure
   const directory = await mkdtemp(join(tmpdir(), 'sogang-notices-'))
   try {
     const feeds = await collect(directory, async url => healthy(url))
-    assert.equal(feeds.length, 41)
+    assert.equal(feeds.length, 32)
     for (const feed of feeds) assert.deepEqual(JSON.parse(await readFile(join(directory, 'feeds', `${feed.sourceId}.json`), 'utf8')), feed)
     const before = await readFile(join(directory, 'feeds', 'sogang-academic.json'), 'utf8')
-    for (const source of sources.filter(source => source.site === 'computing' || ['ee-general', 'me-general', 'se-notices', 'eng-newsletter'].includes(source.id))) {
+    for (const source of sources.filter(source => source.kind === 'computing' || ['ee-general', 'me-general', 'se-notices', 'eng-newsletter'].includes(source.id))) {
       const previous = feeds.find(feed => feed.sourceId === source.id)
       await assert.rejects(collect(directory, async url => {
         if (url === feedUrl(source)) return new Response('', { status: 404 })

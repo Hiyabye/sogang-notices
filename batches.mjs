@@ -4,12 +4,12 @@ import { sources } from './sources.mjs'
 // Estimates include observed pins/small boards, not GitHub carry-forward reads.
 // Assign additions deliberately; never reshuffle existing boards at runtime.
 export const batches = [
-  [['ee-academic', 5], ['cs-news', 3], ['eng-research', 3], ['me-general', 3], ['me-events', 2], ['aibased-news', 1], ['se-graduate', 1]],
-  [['sse-notices', 5], ['ai-academic', 3], ['eng-general', 3], ['computing-notices', 2], ['me-academic', 2], ['se-notices', 2]],
-  [['ee-general', 4], ['cs-graduate', 3], ['ai-general', 3], ['ee-seminars', 3], ['eng-careers', 2], ['me-alumni', 2], ['se-careers', 1]],
-  [['ee-employment', 4], ['cs-general', 3], ['ai-careers', 3], ['ee-recruit', 3], ['me-research', 2], ['se-news', 2]],
-  [['sse-news', 4], ['cs-careers', 3], ['aibased-notices', 3], ['ee-news', 3], ['me-awards', 2], ['sogang-academic', 1], ['eng-academic', 1], ['se-industry', 1]],
-  [['cs-main', 3], ['cs-undergraduate', 3], ['ai-news', 3], ['eng-newsletter', 3], ['computing-news', 2], ['me-careers', 2], ['sse-seminars', 1]],
+  [['ee-academic', 5], ['eng-research', 3], ['me-general', 3], ['me-events', 2], ['se-graduate', 1]],
+  [['sse-notices', 5], ['computing-graduate', 3], ['eng-general', 3], ['me-academic', 2], ['se-notices', 2]],
+  [['ee-general', 4], ['computing-academic', 3], ['ee-seminars', 3], ['eng-careers', 2], ['me-alumni', 2], ['se-careers', 1]],
+  [['ee-employment', 4], ['computing-external', 3], ['ee-recruit', 3], ['me-research', 2], ['se-news', 2]],
+  [['sse-news', 4], ['ee-news', 3], ['me-awards', 2], ['sogang-academic', 1], ['eng-academic', 1], ['se-industry', 1]],
+  [['computing-updates', 3], ['computing-career', 3], ['eng-newsletter', 3], ['me-careers', 2], ['sse-seminars', 1]],
 ]
 
 export function validateBatches(catalog = sources) {

@@ -27,14 +27,14 @@ async function bytes(directory) {
 
 test('six stable batches cover the complete catalog with balanced request estimates', () => {
   validateBatches()
-  assert.deepEqual(batches.map(batch => batch.reduce((sum, [, cost]) => sum + cost, 0)), [18, 17, 18, 17, 18, 17])
+  assert.deepEqual(batches.map(batch => batch.reduce((sum, [, cost]) => sum + cost, 0)), [14, 15, 15, 14, 12, 12])
   assert.deepEqual(batches.map(batch => batch.map(([id]) => id)), [
-    ['ee-academic', 'cs-news', 'eng-research', 'me-general', 'me-events', 'aibased-news', 'se-graduate'],
-    ['sse-notices', 'ai-academic', 'eng-general', 'computing-notices', 'me-academic', 'se-notices'],
-    ['ee-general', 'cs-graduate', 'ai-general', 'ee-seminars', 'eng-careers', 'me-alumni', 'se-careers'],
-    ['ee-employment', 'cs-general', 'ai-careers', 'ee-recruit', 'me-research', 'se-news'],
-    ['sse-news', 'cs-careers', 'aibased-notices', 'ee-news', 'me-awards', 'sogang-academic', 'eng-academic', 'se-industry'],
-    ['cs-main', 'cs-undergraduate', 'ai-news', 'eng-newsletter', 'computing-news', 'me-careers', 'sse-seminars'],
+    ['ee-academic', 'eng-research', 'me-general', 'me-events', 'se-graduate'],
+    ['sse-notices', 'computing-graduate', 'eng-general', 'me-academic', 'se-notices'],
+    ['ee-general', 'computing-academic', 'ee-seminars', 'eng-careers', 'me-alumni', 'se-careers'],
+    ['ee-employment', 'computing-external', 'ee-recruit', 'me-research', 'se-news'],
+    ['sse-news', 'ee-news', 'me-awards', 'sogang-academic', 'eng-academic', 'se-industry'],
+    ['computing-updates', 'computing-career', 'eng-newsletter', 'me-careers', 'sse-seminars'],
   ])
   assert.throws(() => validateBatches([...sources, { id: 'future-board' }]), /Every source/)
   assert.throws(() => validateBatches(sources.slice(1)), /membership/)
@@ -116,7 +116,7 @@ test('rolling failures reuse the validated baseline and summaries distinguish he
   const directory = await mkdtemp(join(tmpdir(), 'rolling-failure-'))
   try {
     const previous = baseline(48 * 60 * 60 * 1000)
-    previous.get('cs-main').collectionStatus = 'error' // Batch 6 is carried, not attempted.
+    previous.get('computing-updates').collectionStatus = 'error' // Batch 6 is carried, not attempted.
     const summaryFile = join(directory, 'summary.md')
     let github = 0
     const feeds = await collect(directory, async url => {
@@ -124,7 +124,7 @@ test('rolling failures reuse the validated baseline and summaries distinguish he
       if (id) { github++; return Response.json(previous.get(id)) }
       return new Response('Unavailable', { status: 503 })
     }, { ...options, summaryFile })
-    assert.equal(github, 41, 'Recovery must reuse the already validated baseline.')
+    assert.equal(github, 32, 'Recovery must reuse the already validated baseline.')
     for (const feed of feeds) {
       const before = previous.get(feed.sourceId)
       if (batches[0].some(([id]) => id === feed.sourceId)) {
@@ -137,8 +137,8 @@ test('rolling failures reuse the validated baseline and summaries distinguish he
     assert.equal(selectBatch(new Map(feeds.map(feed => [feed.sourceId, feed]))), 1)
     const summary = await readFile(summaryFile, 'utf8')
     assert.match(summary, /Batch 1\/6/)
-    assert.match(summary, /41 feeds without a successful fetch within 24 hours/)
-    assert.match(summary, /cs-main: carried \(previous attempt failed\)/)
+    assert.match(summary, /32 feeds without a successful fetch within 24 hours/)
+    assert.match(summary, /computing-updates: carried \(previous attempt failed\)/)
     assert.match(summary, /ee-academic: FAILED, retained last good data/)
   } finally { await rm(directory, { recursive: true, force: true }) }
 })
@@ -187,8 +187,8 @@ test('only explicit full mode bootstraps without published feeds, and invalid op
   try {
     const calls = []
     const feeds = await collect(directory, async url => { calls.push(url); return healthy(url) }, { ...options, mode: 'full' })
-    assert.equal(feeds.length, 41)
-    assert.equal(calls.length, 41)
+    assert.equal(feeds.length, 32)
+    assert.equal(calls.length, 32)
     assert.ok(calls.every(url => !recoveryId(url)))
     for (const invalid of [{ mode: 'automatic' }, { spacingMs: -1 }, { spacingMs: NaN }]) {
       await assert.rejects(collect(directory, () => { throw new Error('Must not fetch') }, { ...options, ...invalid }), /mode|spacing/)

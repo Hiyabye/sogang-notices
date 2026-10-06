@@ -9,9 +9,21 @@ export function engineeringFixture(source, page = 1, total = 3) {
   const paginationUrl = number => {
     const url = new URL(boardUrl(source, number))
     if (source.code) url.searchParams.set('code', source.code)
-    return url.href
+    return source.kind === 'mechanical' ? `${url.pathname}${url.search}` : url.href
   }
   const paging = `<a class="on" href="${paginationUrl(page)}">${page}</a>${pages > 1 ? `<a href="${paginationUrl(pages)}">${pages}</a>` : ''}`
+  if (source.kind === 'computing') {
+    const rows = records.map(id => `<tr><td class="board-list-number">${id}</td><td class="board-list-title"><a href="/ko/community/${source.board}/detail/${id}?num=${page}">Notice ${id}</a></td><td class="board-list-date">2026-09-01</td></tr>`).join('')
+    const category = source.board === 'academicNotice' ? '<div class="board-category"><button aria-pressed="true">전체</button></div>' : ''
+    const start = Math.floor((page - 1) / 10) * 10 + 1
+    const numbers = Array.from({ length: Math.min(10, pages - start + 1) }, (_, index) => {
+      const number = start + index
+      return `<button${number === page ? ' class="is-active" aria-current="page"' : ''}>${number}</button>`
+    }).join('')
+    const arrows = [['첫 페이지', page === 1], ['이전 페이지', page === 1], ['다음 페이지', page === pages], ['마지막 페이지', page === pages]]
+      .map(([label, disabled]) => `<button class="board-pagination-arrow" aria-label="${label}"${disabled ? ' disabled' : ''}></button>`).join('')
+    return `<aside class="board-lnb"><a href="${source.path}" aria-current="page">${source.label}</a></aside><section class="board-content"><header class="board-content-header"><h2>${source.label}</h2>${category}</header><div class="board-toolbar"><strong>${total}</strong><input id="board-search-keyword" value=""></div><div class="board-list"><table><tbody>${rows}</tbody></table></div>${total ? '' : '<p class="cont-empty-title">등록된 게시물이 없습니다</p>'}<nav class="board-pagination">${numbers}${arrows}</nav></section>`
+  }
   if (source.kind === 'community') {
     const sse = source.host === 'sse'
     const heading = sse ? `<div class="ttl01">${source.label}</div>` : `<h3>${source.label}</h3>`
