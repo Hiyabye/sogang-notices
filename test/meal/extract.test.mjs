@@ -288,6 +288,32 @@ test('callOpenRouter retries throttling carried in a 200 error payload', async (
   assert.deepEqual(JSON.parse(result), sampleModelOutput)
 })
 
+test('callOpenRouter allows two 120-second attempts by default without expanding the job budget', async (t) => {
+  const deadlines = []
+  const waits = []
+  let calls = 0
+  t.mock.method(AbortSignal, 'timeout', (milliseconds) => {
+    deadlines.push(milliseconds)
+    return new AbortController().signal
+  })
+  await assert.rejects(callOpenRouter({
+    imageBytes: pngBytes,
+    mimeType: 'image/png',
+    weekStart,
+    weekEnd,
+    apiKey: 'test-key',
+    fetcher: async (_url, options) => {
+      calls++
+      assert.ok(options.signal instanceof AbortSignal)
+      throw new DOMException('Timed out', 'TimeoutError')
+    },
+    sleep: (ms) => { waits.push(ms) },
+  }), { name: 'TimeoutError' })
+  assert.equal(calls, 2)
+  assert.deepEqual(deadlines, [120000, 120000])
+  assert.deepEqual(waits, [5000])
+})
+
 test('callOpenRouter exhausts bounded retries on persistent throttling', async () => {
   let callCount = 0
   const waits = []

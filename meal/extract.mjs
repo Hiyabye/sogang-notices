@@ -219,7 +219,7 @@ export async function callOpenRouter({
   model = DEFAULT_MODEL,
   fetcher = fetch,
   sleep = delay,
-  retries = 3,
+  retries = 1,
 }) {
   const prompt = buildPrompt(weekStart, weekEnd)
   const base64 = imageBytes.toString('base64')
@@ -260,7 +260,7 @@ export async function callOpenRouter({
           'X-Title': 'Sogang Notices Meal Extractor',
         },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(120000),
       })
 
       if (!res.ok) {
