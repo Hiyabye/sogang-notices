@@ -9,7 +9,7 @@ import {
   parseMealWeek,
 } from './schema.mjs'
 
-export const DEFAULT_MODEL = 'dots-studio/dots-3-note-preview:free'
+export const DEFAULT_MODEL = 'thinkingmachines/inkling:free'
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 export function imageMimeType(bytes) {
