@@ -99,6 +99,24 @@ test('academic requests retain timeout, TLS-safe redirect policy, and JSON check
   }
 })
 
+test('transport diagnostics expose only recognized categories, never arbitrary error text', async () => {
+  for (const [error, category] of [
+    [new DOMException('private timeout details', 'TimeoutError'), 'TimeoutError'],
+    [new DOMException('private abort details', 'AbortError'), 'AbortError'],
+    [new TypeError('private URL', { cause: Object.assign(new Error('private cause'), { code: 'UND_ERR_CONNECT_TIMEOUT' }) }), 'UND_ERR_CONNECT_TIMEOUT'],
+    [new TypeError('private URL', { cause: Object.assign(new Error('private cause'), { code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' }) }), 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'],
+    [new TypeError('private URL', { cause: { code: 'private-code' } }), 'unknown transport error'],
+  ]) {
+    await assert.rejects(collectSource(sources[0], async () => { throw error }), caught => {
+      assert.equal(caught.message, `Source request failed (${category}).`)
+      assert.equal(caught.cause, error)
+      return true
+    })
+  }
+  const programmingError = new Error('programming fault')
+  await assert.rejects(collectSource(sources[0], async () => { throw programmingError }), error => error === programmingError)
+})
+
 test('all-board bootstrap, recovered failures, unsafe recovery and write failures preserve publication safety', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'sogang-notices-'))
   try {

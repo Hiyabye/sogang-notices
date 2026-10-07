@@ -189,7 +189,8 @@ test('callOpenRouter makes authenticated request with image data and retries tra
     assert.equal(url, 'https://openrouter.ai/api/v1/chat/completions')
     assert.equal(options.headers.Authorization, 'Bearer test-key')
     const body = JSON.parse(options.body)
-    assert.equal(body.model, DEFAULT_MODEL)
+    assert.equal(DEFAULT_MODEL, 'dots-studio/dots-3-note-preview:free')
+    assert.equal(body.model, 'dots-studio/dots-3-note-preview:free')
     assert.equal(body.messages[0].content[1].type, 'image_url')
     assert.ok(
       body.messages[0].content[1].image_url.url.startsWith(

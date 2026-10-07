@@ -73,6 +73,19 @@ export function buildFeed(value, fetchedAt = new Date()) {
     lastAttemptAt: fetchedAt.toISOString(), fetchedAt: fetchedAt.toISOString(), notices }
 }
 
+function transportCategory(error) {
+  if (error.name === 'TimeoutError' || error.name === 'AbortError') return error.name
+  // Log only known transport codes, never source URLs or arbitrary error text.
+  const codes = new Set([
+    'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT',
+    'ENETUNREACH', 'EHOSTUNREACH', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET',
+    'CERT_HAS_EXPIRED', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+    'UNABLE_TO_GET_ISSUER_CERT_LOCALLY', 'ERR_TLS_CERT_ALTNAME_INVALID',
+    'DEPTH_ZERO_SELF_SIGNED_CERT', 'SELF_SIGNED_CERT_IN_CHAIN',
+  ])
+  return codes.has(error.cause?.code) ? error.cause.code : 'unknown transport error'
+}
+
 async function request(url, type, fetcher) {
   let response
   try {
@@ -82,7 +95,7 @@ async function request(url, type, fetcher) {
     })
   } catch (error) {
     // Native fetch network errors carry a cause; arbitrary programming errors propagate.
-    if (error.name === 'TimeoutError' || error.name === 'AbortError' || error.cause) throw new SourceError('Source request failed.', { cause: error })
+    if (error.name === 'TimeoutError' || error.name === 'AbortError' || error.cause) throw new SourceError(`Source request failed (${transportCategory(error)}).`, { cause: error })
     throw error
   }
   if (!response.ok || !response.headers.get('content-type')?.toLowerCase().includes(type) || !response.body) {
