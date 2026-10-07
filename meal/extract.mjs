@@ -9,7 +9,7 @@ import {
   parseMealWeek,
 } from './schema.mjs'
 
-export const DEFAULT_MODEL = 'thinkingmachines/inkling:free'
+export const DEFAULT_MODEL = 'google/gemma-4-31b-it:free'
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 export function imageMimeType(bytes) {
